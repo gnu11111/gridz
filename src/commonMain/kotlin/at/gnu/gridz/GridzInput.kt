@@ -2,5 +2,5 @@ package at.gnu.gridz
 
 interface GridzInput {
 
-    fun tick(dx: Double, dy: Double, dt: Long)
+    fun tick(inputX: Double, inputY: Double, dt: Long)
 }
