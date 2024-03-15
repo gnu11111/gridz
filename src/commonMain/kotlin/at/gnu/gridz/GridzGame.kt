@@ -1,9 +1,6 @@
 package at.gnu.gridz
 
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 class GridzGame : GridzInput {
 
@@ -19,7 +16,7 @@ class GridzGame : GridzInput {
 
     private var speed = 0.0
 
-    override fun tick(inputX: Double, inputY: Double, dt: Long) {
+    override fun tick(inputX: Double, inputY: Double, dt: Float) {
         distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
         if (distance > 0.0) angle = atan2(inputX, inputY)
         val (dx, dy) = updateSpeed(distance, angle, dt)
@@ -27,16 +24,34 @@ class GridzGame : GridzInput {
     }
 
     private fun updatePosition(dx: Double, dy: Double) {
-        x += dx
-        y -= dy
+        val tileX = (x / TILE_X).toInt().toDouble()
+        val tileY = (y / TILE_Y).toInt().toDouble()
+        val nextX = ((x + dx) / TILE_X)
+        val nextY = ((y - dy) / TILE_Y)
+        var ySnapped = false
+        if (!isWall(nextX + 0.5 * sign(dx), tileY)) {
+            if (isWall(nextX + 0.5 * sign(dx), tileY - sign(dy))) {
+                y = ((tileY + 0.5) * TILE_Y.toDouble())
+                ySnapped = true
+            }
+            x += dx
+        }
+        if (!isWall(tileX, nextY - 0.5 * sign(dy))) {
+            if (isWall(tileX + sign(dx), nextY - 0.5 * sign(dy)) && !ySnapped)
+                x = ((tileX + 0.5) * TILE_X.toDouble())
+            y -= dy
+        }
         if (x > WIDTH) x -= WIDTH
         if (x < 0) x += WIDTH
         if (y > HEIGHT) y -= HEIGHT
         if (y < 0) y += HEIGHT
     }
 
-    private fun updateSpeed(distance: Double, angle: Double, dt: Long): Pair<Double, Double> {
-        val factor = dt * 0.05
+    private fun isWall(x: Double, y: Double): Boolean =
+        (level.layout[y.toInt()][x.toInt()] != ' ')
+
+    private fun updateSpeed(distance: Double, angle: Double, dt: Float): Pair<Double, Double> {
+        val factor = dt * 0.5
         speed = if (distance != 0.0)
             (speed + (factor * distance)).coerceIn(-(factor * 10), factor * 10)
         else if (speed > 0.0)
@@ -52,5 +67,7 @@ class GridzGame : GridzInput {
         const val HEIGHT = 480
         const val COLS = 20
         const val ROWS = 20
+        const val TILE_X = WIDTH / COLS
+        const val TILE_Y = HEIGHT / ROWS
     }
 }

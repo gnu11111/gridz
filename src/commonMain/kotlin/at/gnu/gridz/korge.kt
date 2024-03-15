@@ -9,7 +9,7 @@ import korlibs.event.GameStick
 import korlibs.event.Key
 import korlibs.image.color.Colors
 import korlibs.korge.Korge
-import korlibs.korge.scene.ScaledScene
+import korlibs.korge.scene.PixelatedScene
 import korlibs.korge.scene.sceneContainer
 import korlibs.korge.view.*
 import korlibs.math.geom.RectCorners
@@ -38,7 +38,8 @@ class GridzRenderer {
 }
 
 
-class GameScene(private val game: GridzGame) : ScaledScene(WIDTH + SCORE_WIDTH, HEIGHT) {
+//class GameScene(private val game: GridzGame) : ScaledScene(WIDTH + SCORE_WIDTH, HEIGHT) {
+class GameScene(private val game: GridzGame) : PixelatedScene(WIDTH + SCORE_WIDTH, HEIGHT) {
 
     private val tileWidth = WIDTH / COLS
     private val tileHeight = HEIGHT / ROWS
@@ -50,11 +51,17 @@ class GameScene(private val game: GridzGame) : ScaledScene(WIDTH + SCORE_WIDTH, 
                 solidRect(tileWidth, tileWidth, color) { position(x * tileWidth, y * tileHeight) }
             }
 
-        for ((y, row) in game.level.layout.split("\n").withIndex()) {
+        for ((y, row) in game.level.layout.withIndex()) {
             for ((x, c) in row.withIndex()) {
                 if (c != '*') continue
-                roundRect(Size(tileWidth - 2, tileHeight - 2), RectCorners(4), Colors.BLUE, Colors.DARKCYAN, 4) {
-                    position(x * tileWidth + 1, y * tileHeight + 1)
+                roundRect(
+                    Size(tileWidth - 4, tileHeight - 4),
+                    RectCorners(4),
+                    Colors["#0000a0"],
+                    Colors["#1020ff"],
+                    4
+                ) {
+                    position((x * tileWidth) + 2, (y * tileHeight) + 2)
                 }
             }
         }
@@ -72,9 +79,9 @@ class GameScene(private val game: GridzGame) : ScaledScene(WIDTH + SCORE_WIDTH, 
         val direction = circle(radius = tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
         solidRect(SCORE_WIDTH, HEIGHT, Colors.DIMGREY) { position(WIDTH, 0) }
 
-        addUpdater { dt ->
+        addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = getInput()
-            game.tick(dx, dy, dt.inWholeMilliseconds)
+            game.tick(dx, dy, dt)
             val directionRadius = game.distance * player.radius * 0.8
             val directionX = game.x + (directionRadius * 0.6 * sin(game.angle))
             val directionY = game.y - (directionRadius * 0.6 * cos(game.angle))
