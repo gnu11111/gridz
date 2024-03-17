@@ -21,24 +21,65 @@ class GridzGame : GridzInput {
         if (distance > 0.0) angle = atan2(inputX, inputY)
         val (dx, dy) = updateSpeed(distance, angle, dt)
         updatePosition(dx, dy)
+//        updatePosition(inputX, inputY)
     }
 
     private fun updatePosition(dx: Double, dy: Double) {
-        val tileX = (x / TILE_X).toInt().toDouble()
-        val tileY = (y / TILE_Y).toInt().toDouble()
-        val nextX = ((x + dx) / TILE_X)
-        val nextY = ((y - dy) / TILE_Y)
-        var ySnapped = false
-        if (!isWall(nextX + 0.5 * sign(dx), tileY)) {
-            if (isWall(nextX + 0.5 * sign(dx), tileY - sign(dy))) {
-                y = ((tileY + 0.5) * TILE_Y.toDouble())
-                ySnapped = true
+        val offsetX = (x / TILE_WIDTH) - (x / TILE_WIDTH).toInt()
+        val offsetY = (y / TILE_HEIGHT) - (y / TILE_HEIGHT).toInt()
+        val thisX = ((x / TILE_WIDTH)).toInt()
+        val thisY = ((y / TILE_HEIGHT)).toInt()
+        val nextX = (((x + dx) / TILE_WIDTH) + 0.5 * sign(dx)).toInt()
+        val nextY = (((y - dy) / TILE_HEIGHT) - 0.5 * sign(dy)).toInt()
+        val snapX = (thisX + 0.5) * TILE_WIDTH
+        val snapY = (thisY + 0.5) * TILE_HEIGHT
+
+        if ((nextY != thisY) && (nextX == thisX)) {
+            if (!isWall(thisX, nextY) && ((offsetX > 0.9) && (isWall(thisX + 1, nextY)))) {
+                x += dx
+                y = snapY
+            } else if (!isWall(thisX, nextY) && ((offsetX < 0.1) && (isWall(thisX - 1, nextY)))) {
+                x += dx
+                y = snapY
+            } else if (isWall(thisX, nextY)) {
+                x += dx
+            } else {
+                x += dx
+                y -= dy
             }
-            x += dx
         }
-        if (!isWall(tileX, nextY - 0.5 * sign(dy))) {
-            if (isWall(tileX + sign(dx), nextY - 0.5 * sign(dy)) && !ySnapped)
-                x = ((tileX + 0.5) * TILE_X.toDouble())
+        else if ((nextX != thisX) && (nextY == thisY)) {
+            if (!isWall(nextX, thisY) && ((offsetY > 0.9) && (isWall(nextX, thisY + 1)))) {
+                x = snapX
+                y -= dy
+            } else if (!isWall(nextX, thisY) && ((offsetY < 0.1) && (isWall(nextX, thisY - 1)))) {
+                x = snapX
+                y -= dy
+            } else if (isWall(nextX, thisY)) {
+                y -= dy
+            } else {
+                x += dx
+                y -= dy
+            }
+        } else if ((nextX != thisX) && (nextY != thisY)) {
+            if (isWall(nextX, nextY) && !isWall(thisX, nextY)) {
+                x = snapX
+                y -= dy
+            } else if (isWall(nextX, nextY) && !isWall(nextX, thisY)) {
+                x += dx
+                y = snapY
+            } else if (!isWall(nextX, nextY) && isWall(thisX, nextY)) {
+                x += dx
+                y = snapY
+            } else if (!isWall(nextX, nextY) && isWall(nextX, thisY)) {
+                x = snapX
+                y -= dy
+            } else if (!isWall(nextX, nextY)) {
+                x += dx
+                y -= dy
+            }
+        } else {
+            x += dx
             y -= dy
         }
         if (x > WIDTH) x -= WIDTH
@@ -47,8 +88,8 @@ class GridzGame : GridzInput {
         if (y < 0) y += HEIGHT
     }
 
-    private fun isWall(x: Double, y: Double): Boolean =
-        (level.layout[y.toInt()][x.toInt()] != ' ')
+    private fun isWall(x: Int, y: Int): Boolean =
+        (level.layout[y][x] != ' ')
 
     private fun updateSpeed(distance: Double, angle: Double, dt: Float): Pair<Double, Double> {
         val factor = dt * 0.5
@@ -67,7 +108,7 @@ class GridzGame : GridzInput {
         const val HEIGHT = 480
         const val COLS = 20
         const val ROWS = 20
-        const val TILE_X = WIDTH / COLS
-        const val TILE_Y = HEIGHT / ROWS
+        const val TILE_WIDTH = WIDTH / COLS
+        const val TILE_HEIGHT = HEIGHT / ROWS
     }
 }

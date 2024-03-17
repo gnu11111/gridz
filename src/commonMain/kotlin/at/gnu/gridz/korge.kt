@@ -76,17 +76,17 @@ class GameScene(private val game: GridzGame) : PixelatedScene(WIDTH + SCORE_WIDT
         ) {
             anchor(0.4, 0.4)
         }
-        val direction = circle(radius = tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
-        solidRect(SCORE_WIDTH, HEIGHT, Colors.DIMGREY) { position(WIDTH, 0) }
+        val pointer = circle(radius = tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
+        solidRect(SCORE_WIDTH, HEIGHT, Colors["#201515"]) { position(WIDTH, 0) }
 
         addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = getInput()
             game.tick(dx, dy, dt)
-            val directionRadius = game.distance * player.radius * 0.8
-            val directionX = game.x + (directionRadius * 0.6 * sin(game.angle))
-            val directionY = game.y - (directionRadius * 0.6 * cos(game.angle))
+            val pointerRadius = game.distance * player.radius * 0.8
+            val pointerX = game.x + (pointerRadius * 0.6 * sin(game.angle))
+            val pointerY = game.y - (pointerRadius * 0.6 * cos(game.angle))
             player.position(game.x, game.y)
-            direction.position(directionX, directionY)
+            pointer.position(pointerX, pointerY)
         }
     }
 
