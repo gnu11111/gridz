@@ -1,0 +1,19 @@
+
+Next steps:
+
+- test levels with different resolutions, tile sizes, rows & columns
+
+
+Ideas:
+
+- color occupied tiles
+- collect items (keys)
+- move blocks
+- destroy blocks
+- teleport
+- control drone to guide worker
+- enemy controlled by AI
+- mouse movement with A*-algorithm (leave crumbs)
+- display timer & score
+
+- design levels with LDTk

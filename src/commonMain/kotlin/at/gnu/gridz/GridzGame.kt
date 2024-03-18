@@ -66,7 +66,9 @@ class GridzGame : GridzInput {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY != thisY)) {
-            if (isWall(nextX, nextY) && !isWall(nextX, thisY) && preferX) {
+            if (!isWall(nextX, nextY) && isWall(nextX, thisY) && isWall(thisX, nextY)) {
+                // do nothing
+            } else if (isWall(nextX, nextY) && !isWall(nextX, thisY) && preferX) {
                 x += dx
                 y = snapY
             } else if (isWall(nextX, nextY) && !isWall(thisX, nextY) && preferX) {
