@@ -92,8 +92,8 @@ class GameScene(private val game: GridzGame) : PixelatedScene(WIDTH + SCORE_WIDT
 
     private fun getInput(): Pair<Double, Double> {
         val stick = input.gamepads[0][GameStick.LEFT]
-        val dx = stick.x + if (keys[Key.LEFT]) -1.0 else if (keys[Key.RIGHT]) 1.0 else 0.0
-        val dy = stick.y + if (keys[Key.DOWN]) -1.0 else if (keys[Key.UP]) 1.0 else 0.0
+        val dx = stick.x + if (keys[Key.LEFT]) -0.5 else if (keys[Key.RIGHT]) 0.5 else 0.0
+        val dy = stick.y + if (keys[Key.DOWN]) -0.5 else if (keys[Key.UP]) 0.5 else 0.0
         return dx.coerceIn(-1.0, 1.0) to dy.coerceIn(-1.0, 1.0)
     }
 }
