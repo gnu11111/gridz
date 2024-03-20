@@ -7,6 +7,7 @@ import at.gnu.gridz.GridzGame.Companion.WIDTH
 import at.gnu.gridz.GridzRenderer.Companion.SCORE_WIDTH
 import korlibs.event.GameStick
 import korlibs.event.Key
+import korlibs.event.MouseButton
 import korlibs.image.color.Colors
 import korlibs.korge.Korge
 import korlibs.korge.scene.PixelatedScene
@@ -15,7 +16,9 @@ import korlibs.korge.view.*
 import korlibs.math.geom.RectCorners
 import korlibs.math.geom.Size
 import korlibs.math.isEven
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 
 class GridzRenderer {
@@ -91,9 +94,25 @@ class GameScene(private val game: GridzGame) : PixelatedScene(WIDTH + SCORE_WIDT
     }
 
     private fun getInput(): Pair<Double, Double> {
+        val mouseX: Double
+        val mouseY: Double
+        if (input.mouseButtonPressed(MouseButton.RIGHT)) {
+            val deltaX = input.mousePos.x - game.x
+            val deltaY = game.y - input.mousePos.y
+            if ((abs(deltaX) + abs(deltaY)) > 5.0) {
+                mouseX = deltaX / max(abs(deltaX), abs(deltaY))
+                mouseY = deltaY / max(abs(deltaX), abs(deltaY))
+            } else {
+                mouseX = 0.0
+                mouseY = 0.0
+            }
+        } else {
+            mouseX = 0.0
+            mouseY = 0.0
+        }
         val stick = input.gamepads[0][GameStick.LEFT]
-        val dx = stick.x + if (keys[Key.LEFT]) -0.5 else if (keys[Key.RIGHT]) 0.5 else 0.0
-        val dy = stick.y + if (keys[Key.DOWN]) -0.5 else if (keys[Key.UP]) 0.5 else 0.0
+        val dx = mouseX + stick.x + if (keys[Key.LEFT]) -0.5 else if (keys[Key.RIGHT]) 0.5 else 0.0
+        val dy = mouseY + stick.y + if (keys[Key.DOWN]) -0.5 else if (keys[Key.UP]) 0.5 else 0.0
         return dx.coerceIn(-1.0, 1.0) to dy.coerceIn(-1.0, 1.0)
     }
 }

@@ -17,3 +17,8 @@ Ideas:
 - display timer & score
 
 - design levels with LDTk
+
+
+Done:
+
+- basic mouse movement

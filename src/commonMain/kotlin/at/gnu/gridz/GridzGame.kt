@@ -20,7 +20,6 @@ class GridzGame : GridzInput {
     private var speed = 0.0
 
     override fun tick(inputX: Double, inputY: Double, dt: Float) {
-        if ((inputX == 0.0) && (inputY == 0.0)) return
         distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
         if (distance > 0.0) angle = atan2(inputX, inputY)
         val (dx, dy) = updateSpeed(distance, angle, dt)
@@ -30,20 +29,19 @@ class GridzGame : GridzInput {
     private fun updatePosition(dx: Double, dy: Double) {
         val thisX = ((x / TILE_WIDTH)).toInt()
         val thisY = ((y / TILE_HEIGHT)).toInt()
-        val nextX = (((x + dx) / TILE_WIDTH) + 0.5 * sign(dx)).toInt()
-        val nextY = (((y - dy) / TILE_HEIGHT) - 0.5 * sign(dy)).toInt()
         val snapX = (thisX + 0.5) * TILE_WIDTH
         val snapY = (thisY + 0.5) * TILE_HEIGHT
+        val nextX = (((x + dx) / TILE_WIDTH) + 0.5 * sign(dx)).toInt()
+        val nextY = (((y - dy) / TILE_HEIGHT) - 0.5 * sign(dy)).toInt()
         val offsetX = (x / TILE_WIDTH) - (x / TILE_WIDTH).toInt()
         val offsetY = (y / TILE_HEIGHT) - (y / TILE_HEIGHT).toInt()
 
         if ((nextX == thisX) && (nextY != thisY)) {
-            preferX = false
-            if (!isWall(thisX, nextY) && ((offsetX > 0.5) && (isWall(thisX + 1, nextY)))) {
-                x += dx - 0.5
-                y = snapY
-            } else if (!isWall(thisX, nextY) && ((offsetX < 0.5) && (isWall(thisX - 1, nextY)))) {
+            if (!isWall(thisX, nextY) && ((offsetX < 0.5) && (isWall(thisX - 1, nextY)))) {
                 x += dx + 0.5
+                y = snapY
+            } else if (!isWall(thisX, nextY) && ((offsetX > 0.5) && (isWall(thisX + 1, nextY)))) {
+                x += dx - 0.5
                 y = snapY
             } else if (isWall(thisX, nextY)) {
                 x += dx
@@ -52,7 +50,6 @@ class GridzGame : GridzInput {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY == thisY)) {
-            preferX = true
             if (!isWall(nextX, thisY) && ((offsetY > 0.5) && (isWall(nextX, thisY + 1)))) {
                 x = snapX
                 y -= dy + 0.5
@@ -66,6 +63,8 @@ class GridzGame : GridzInput {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY != thisY)) {
+            preferX = (abs(dx) > abs(dy))
+//            println("$dx $dy $preferX")
             if (!isWall(nextX, nextY) && isWall(nextX, thisY) && isWall(thisX, nextY)) {
                 // do nothing
             } else if (isWall(nextX, nextY) && !isWall(nextX, thisY) && preferX) {
@@ -109,9 +108,9 @@ class GridzGame : GridzInput {
         speed = if (distance != 0.0)
             (speed + (factor * distance)).coerceIn(-(factor * 10), factor * 10)
         else if (speed > 0.0)
-            (speed - (factor * 5.0)).coerceAtLeast(0.0)
+            (speed - (factor * 1.0)).coerceAtLeast(0.0)
         else
-            (speed + (factor * 5.0)).coerceAtMost(0.0)
+            (speed + (factor * 1.0)).coerceAtMost(0.0)
         return speed * sin(angle) to speed * cos(angle)
     }
 
