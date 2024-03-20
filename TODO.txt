@@ -2,11 +2,11 @@
 Next steps:
 
 - test levels with different resolutions, tile sizes, rows & columns
+- color occupied tiles
 
 
 Ideas:
 
-- color occupied tiles
 - collect items (keys)
 - move blocks
 - destroy blocks
