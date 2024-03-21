@@ -24,4 +24,7 @@ class GridzLevel {
         *                  *
         ********************
     """.trimIndent().split("\n")
+
+    val rows = layout.size
+    val cols = layout.maxOf { it.length }
 }

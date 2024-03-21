@@ -1,10 +1,7 @@
 package at.gnu.gridz
 
-import at.gnu.gridz.GridzGame.Companion.COLS
 import at.gnu.gridz.GridzGame.Companion.HEIGHT
-import at.gnu.gridz.GridzGame.Companion.ROWS
 import at.gnu.gridz.GridzGame.Companion.WIDTH
-import at.gnu.gridz.GridzRenderer.Companion.SCORE_WIDTH
 import korlibs.event.GameStick
 import korlibs.event.Key
 import korlibs.event.MouseButton
@@ -24,72 +21,76 @@ import kotlin.math.sin
 class GridzRenderer {
 
     suspend fun init(gridzGame: GridzGame) {
+        val scoreWidth = WIDTH / 3
         Korge(
             title = GridzGame.NAME,
-            windowSize = Size(WIDTH + SCORE_WIDTH, HEIGHT),
-            virtualSize = Size(WIDTH + SCORE_WIDTH, HEIGHT),
+            windowSize = Size(WIDTH + scoreWidth, HEIGHT),
+            virtualSize = Size(WIDTH + scoreWidth, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { GameScene(gridzGame) }
+            sceneContainer().changeTo { GameScene(gridzGame, scoreWidth) }
         }
     }
 
     companion object {
         const val BACKGROUND_COLOR = "#2b0000"
-        const val SCORE_WIDTH = 160
     }
 }
 
 
-//class GameScene(private val game: GridzGame) : ScaledScene(WIDTH + SCORE_WIDTH, HEIGHT) {
-class GameScene(private val game: GridzGame) : PixelatedScene(WIDTH + SCORE_WIDTH, HEIGHT) {
+//class GameScene(private val game: GridzGame, private val scoreWidth: Int) : ScaledScene(WIDTH + scoreWidth, HEIGHT) {
+class GameScene(private val game: GridzGame, private val scoreWidth: Int)
+    : PixelatedScene(WIDTH + scoreWidth, HEIGHT) {
 
-    private val tileWidth = WIDTH / COLS
-    private val tileHeight = HEIGHT / ROWS
+    private var tiles: MutableList<MutableList<SolidRect>> = mutableListOf()
 
     override suspend fun SContainer.sceneInit() {
-        for (y in 0 until ROWS)
-            for (x in 0 until COLS) {
-                val color = if ((x + y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
-                solidRect(tileWidth, tileWidth, color) { position(x * tileWidth, y * tileHeight) }
-            }
-
-        for ((y, row) in game.level.layout.withIndex()) {
-            for ((x, c) in row.withIndex()) {
-                if (c != '*') continue
-                roundRect(
-                    Size(tileWidth - 4, tileHeight - 4),
-                    RectCorners(4),
-                    Colors["#0000a0"],
-                    Colors["#1020ff"],
-                    4
-                ) {
-                    position((x * tileWidth) + 2, (y * tileHeight) + 2)
+        for (row in game.tiles) {
+            val tileRow = mutableListOf<SolidRect>()
+            for (tile in row) {
+                val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
+                tileRow += solidRect(game.tileWidth, game.tileHeight, color) {
+                    position(tile.x * game.tileWidth, tile.y * game.tileHeight)
+                }
+                if (tile.type == GridzTile.TileType.WALL) {
+                    roundRect(
+                        Size(game.tileWidth - 4, game.tileHeight - 4),
+                        RectCorners(4),
+                        Colors["#0000a0"],
+                        Colors["#1020ff"],
+                        4
+                    ) {
+                        position((tile.x * game.tileWidth) + 2, (tile.y * game.tileHeight) + 2)
+                    }
                 }
             }
+            tiles += tileRow
         }
     }
 
     override suspend fun SContainer.sceneMain() {
         val player = circle(
-            radius = tileWidth / 2.4,
+            radius = game.tileWidth / 2.4,
             fill = Colors.DARKRED,
             stroke = Colors.ORANGE,
-            strokeThickness = tileWidth * 0.2
+            strokeThickness = game.tileWidth * 0.2
         ) {
             anchor(0.4, 0.4)
         }
-        val pointer = circle(radius = tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
-        solidRect(SCORE_WIDTH, HEIGHT, Colors["#201515"]) { position(WIDTH, 0) }
+        val pointer = circle(radius = game.tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
+        solidRect(scoreWidth, HEIGHT, Colors["#201515"]) { position(WIDTH, 0) }
 
         addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = getInput()
-            game.tick(dx, dy, dt)
+            val tile = game.tick(dx, dy, dt)
             val pointerRadius = game.distance * player.radius * 0.8
             val pointerX = game.x + (pointerRadius * 0.6 * sin(game.angle))
             val pointerY = game.y - (pointerRadius * 0.6 * cos(game.angle))
             player.position(game.x, game.y)
             pointer.position(pointerX, pointerY)
+            if (tile != null)
+                tiles.getOrNull(tile.y)?.getOrNull(tile.x)?.color =
+                    if ((tile.x + tile.y).isEven) Colors["#102010"] else Colors["#102810"]
         }
     }
 
