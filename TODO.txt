@@ -1,11 +1,12 @@
 
 Next steps:
 
-- color occupied tiles
+- display timer, score and infos
 
 
 Ideas:
 
+- inventory
 - collect items (keys)
 - move blocks
 - destroy blocks
@@ -13,12 +14,12 @@ Ideas:
 - control drone to guide worker
 - enemy controlled by AI
 - mouse movement with A*-algorithm (leave crumbs)
-- display timer & score
-
 - design levels with LDTk
 
 
 Done:
 
+- colored tiles fade out after a designated lifetime
+- color occupied tiles
 - test levels with different resolutions, tile sizes, rows & columns
 - basic mouse movement

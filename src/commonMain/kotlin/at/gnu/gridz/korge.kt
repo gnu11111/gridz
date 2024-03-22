@@ -42,14 +42,11 @@ class GridzRenderer {
 class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT) {
 
-    private var tiles: MutableList<MutableList<SolidRect>> = mutableListOf()
-
     override suspend fun SContainer.sceneInit() {
         for (row in game.tiles) {
-            val tileRow = mutableListOf<SolidRect>()
             for (tile in row) {
                 val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
-                tileRow += solidRect(game.tileWidth, game.tileHeight, color) {
+                tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
                     position(tile.x * game.tileWidth, tile.y * game.tileHeight)
                 }
                 if (tile.type == GridzTile.TileType.WALL) {
@@ -64,7 +61,6 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
                     }
                 }
             }
-            tiles += tileRow
         }
     }
 
@@ -82,15 +78,20 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 
         addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = getInput()
-            val tile = game.tick(dx, dy, dt)
+            game.tick(dx, dy, dt)
             val pointerRadius = game.distance * player.radius * 0.8
             val pointerX = game.x + (pointerRadius * 0.6 * sin(game.angle))
             val pointerY = game.y - (pointerRadius * 0.6 * cos(game.angle))
             player.position(game.x, game.y)
             pointer.position(pointerX, pointerY)
-            if (tile != null)
-                tiles.getOrNull(tile.y)?.getOrNull(tile.x)?.color =
-                    if ((tile.x + tile.y).isEven) Colors["#102010"] else Colors["#102810"]
+            game.tiles.forEach { row ->
+                row.forEach {
+                    if (it.lit > 0)
+                        it.component?.color = if ((it.x + it.y).isEven) Colors["#142414"] else Colors["#102810"]
+                    else
+                        it.component?.color = if ((it.x + it.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
+                }
+            }
         }
     }
 

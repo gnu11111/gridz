@@ -1,5 +1,6 @@
 package at.gnu.gridz
 
+import at.gnu.gridz.GridzTile.Companion.LIFETIME
 import kotlin.math.*
 
 class GridzGame : GridzInput {
@@ -12,7 +13,7 @@ class GridzGame : GridzInput {
         private set
     var angle = 0.0
         private set
-    var tiles: MutableList<MutableList<GridzTile>> = mutableListOf()
+    var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
         private set
 
     var tileWidth = 0
@@ -28,13 +29,13 @@ class GridzGame : GridzInput {
     private fun init(level: GridzLevel) {
         tileWidth = WIDTH / level.cols
         tileHeight = HEIGHT / level.rows
-        x = tileWidth * level.cols / 2.0
-        y = tileHeight * level.rows / 2.0
+        x = (tileWidth * level.startX).toDouble()
+        y = (tileHeight * level.startY).toDouble()
         distance = 0.0
         angle = 0.0
-        tiles = mutableListOf()
+        tiles = arrayListOf()
         for (y in 0 until level.rows) {
-            val row = mutableListOf<GridzTile>()
+            val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {
                 val type = when (level.layout.getOrNull(y)?.getOrNull(x)) {
                     '*' -> GridzTile.TileType.WALL
@@ -46,11 +47,16 @@ class GridzGame : GridzInput {
         }
     }
 
-    override fun tick(inputX: Double, inputY: Double, dt: Float): GridzTile? {
+    override fun tick(inputX: Double, inputY: Double, dt: Float) {
         distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
         if (distance > 0.0) angle = atan2(inputX, inputY)
         val (dx, dy) = updateSpeed(dt)
-        return updatePosition(dx, dy)
+        updatePosition(dx, dy)
+        updateTiles()
+    }
+
+    private fun updateTiles() {
+        tiles.forEach { row -> row.forEach { if (it.lit > 0) it.lit-- } }
     }
 
     private fun updateSpeed(dt: Float): Pair<Double, Double> {
@@ -64,7 +70,7 @@ class GridzGame : GridzInput {
         return (if (abs(dx) < 0.1) 0.0 else dx) to (if (abs(dy) < 0.1) 0.0 else dy)
     }
 
-    private fun updatePosition(dx: Double, dy: Double): GridzTile? {
+    private fun updatePosition(dx: Double, dy: Double) {
         val thisX = ((x / tileWidth)).toInt()
         val thisY = ((y / tileHeight)).toInt()
         val snapX = (thisX + 0.5) * tileWidth
@@ -140,15 +146,18 @@ class GridzGame : GridzInput {
         if (y > HEIGHT) y -= HEIGHT
         if (y < 0) y += HEIGHT
 
-        val tile = tile(((x / tileWidth)).toInt(), ((y / tileHeight)).toInt())
-        return if ((tile != null) && (!tile.lit)) tile.apply { lit = true } else null
+        val endX = ((x / tileWidth)).toInt()
+        val endY = ((y / tileHeight)).toInt()
+        val tile = tile(endX, endY)
+        if (((endX != thisX) || (endY != thisY)) && (tile != GridzTile.OUT_OF_BOUNDS))
+            tile.lit = LIFETIME
     }
 
-    private fun isWall(x: Int, y: Int): Boolean =
-        (tile(x, y)?.type == GridzTile.TileType.WALL)
+    private fun tile(x: Int, y: Int): GridzTile =
+        tiles.getOrNull(y)?.getOrNull(x) ?: GridzTile.OUT_OF_BOUNDS
 
-    private fun tile(x: Int, y: Int): GridzTile? =
-        tiles.getOrNull(y)?.getOrNull(x)
+    private fun isWall(x: Int, y: Int): Boolean =
+        (tile(x, y).type == GridzTile.TileType.WALL)
 
     companion object {
         const val NAME = "gridZ"
