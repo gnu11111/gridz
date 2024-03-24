@@ -54,11 +54,11 @@ class GridzGame : GridzInput {
         if (distance > 0.0) angle = atan2(inputX, inputY)
         val (dx, dy) = updateSpeed(dt)
         updatePosition(dx, dy)
-        updateTiles()
+        updateTiles(dt)
     }
 
-    private fun updateTiles() {
-        tiles.forEach { row -> row.forEach { if (it.lit > 0) it.lit-- } }
+    private fun updateTiles(dt: Float) {
+        tiles.forEach { row -> row.forEach { if (it.lit > 0) it.lit = (it.lit - (dt * 100).toInt()).coerceAtLeast(0) } }
     }
 
     private fun updateSpeed(dt: Float): Pair<Double, Double> {
