@@ -20,6 +20,7 @@ class GridzGame : GridzInput {
     var tileHeight = 0
     private var speed = 0.0
     private var preferX = true
+    private var level = GridzLevel()
 
 
     init {
@@ -27,6 +28,7 @@ class GridzGame : GridzInput {
     }
 
     private fun init(level: GridzLevel) {
+        this.level = level
         tileWidth = WIDTH / level.cols
         tileHeight = HEIGHT / level.rows
         x = (tileWidth * level.startX).toDouble()
@@ -75,8 +77,10 @@ class GridzGame : GridzInput {
         val thisY = ((y / tileHeight)).toInt()
         val snapX = (thisX + 0.5) * tileWidth
         val snapY = (thisY + 0.5) * tileHeight
-        val nextX = (((x + dx) / tileWidth) + 0.5 * sign(dx)).toInt()
-        val nextY = (((y - dy) / tileHeight) - 0.5 * sign(dy)).toInt()
+        val nextXDouble = (((x + dx) / tileWidth) + 0.5 * sign(dx))
+        val nextX = if (nextXDouble >= 0.0) nextXDouble.toInt() else level.cols - 1
+        val nextYDouble = (((y - dy) / tileHeight) - 0.5 * sign(dy))
+        val nextY = if (nextYDouble >= 0.0) nextYDouble.toInt() else level.rows - 1
         val offsetX = (x / tileWidth) - (x / tileWidth).toInt()
         val offsetY = (y / tileHeight) - (y / tileHeight).toInt()
         val speedX = speed * sign(dx)
@@ -154,7 +158,8 @@ class GridzGame : GridzInput {
     }
 
     private fun tile(x: Int, y: Int): GridzTile =
-        tiles.getOrNull(y)?.getOrNull(x) ?: GridzTile.OUT_OF_BOUNDS
+        tiles.getOrNull((y + level.rows) % level.rows)?.getOrNull((x + level.cols) % level.cols)
+            ?: GridzTile.OUT_OF_BOUNDS
 
     private fun isWall(x: Int, y: Int): Boolean =
         (tile(x, y).type == GridzTile.TileType.WALL)

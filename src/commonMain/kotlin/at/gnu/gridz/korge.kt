@@ -87,7 +87,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
             game.tiles.forEach { row ->
                 row.forEach {
                     if (it.lit > 0)
-                        it.component?.color = if ((it.x + it.y).isEven) Colors["#142414"] else Colors["#102810"]
+                        it.component?.color = if ((it.x + it.y).isEven) Colors["#143014"] else Colors["#102810"]
                     else
                         it.component?.color = if ((it.x + it.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
                 }
@@ -96,25 +96,24 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     private fun getInput(): Pair<Double, Double> {
-        val mouseX: Double
-        val mouseY: Double
-        if (input.mouseButtonPressed(MouseButton.RIGHT)) {
-            val deltaX = input.mousePos.x - game.x
-            val deltaY = game.y - input.mousePos.y
-            if ((abs(deltaX) + abs(deltaY)) > 5.0) {
-                mouseX = deltaX / max(abs(deltaX), abs(deltaY))
-                mouseY = deltaY / max(abs(deltaX), abs(deltaY))
-            } else {
-                mouseX = 0.0
-                mouseY = 0.0
-            }
-        } else {
-            mouseX = 0.0
-            mouseY = 0.0
-        }
+        val (mouseOrTouchX, mouseOrTouchY) = if (input.mouseButtonPressed(MouseButton.RIGHT))
+            mouseOrTouchOffsets(input.mousePos.x, input.mousePos.y)
+        else if (input.activeTouches.isNotEmpty())
+            mouseOrTouchOffsets(input.touches[0].x, input.touches[0].y)
+        else
+            0.0 to 0.0
         val stick = input.gamepads[0][GameStick.LEFT]
-        val dx = mouseX + stick.x + if (keys[Key.LEFT]) -0.5 else if (keys[Key.RIGHT]) 0.5 else 0.0
-        val dy = mouseY + stick.y + if (keys[Key.DOWN]) -0.5 else if (keys[Key.UP]) 0.5 else 0.0
+        val dx = mouseOrTouchX + stick.x + if (keys[Key.LEFT]) -0.5 else if (keys[Key.RIGHT]) 0.5 else 0.0
+        val dy = mouseOrTouchY + stick.y + if (keys[Key.DOWN]) -0.5 else if (keys[Key.UP]) 0.5 else 0.0
         return dx.coerceIn(-1.0, 1.0) to dy.coerceIn(-1.0, 1.0)
+    }
+
+    private fun mouseOrTouchOffsets(inputX: Double, inputY: Double): Pair<Double, Double> {
+        val deltaX = inputX - game.x
+        val deltaY = game.y - inputY
+        return if ((abs(deltaX) + abs(deltaY)) > 10.0)
+            (deltaX / max(abs(deltaX), abs(deltaY))) to (deltaY / max(abs(deltaX), abs(deltaY)))
+        else
+            0.0 to 0.0
     }
 }

@@ -3,7 +3,7 @@ package at.gnu.gridz
 class GridzLevel {
 
     val layout = """
-        ********************
+        ************ *******
         *                  *
         *            ****  *
         *             ***  *
@@ -11,7 +11,7 @@ class GridzLevel {
         *  *               *
         *  ****      ****  *
         *                  *
-        *                  *
+                            
         *********  *********
         *********  *********
         *                  *
@@ -22,7 +22,7 @@ class GridzLevel {
         * * * * *      *   *
         * *   * ********** *
         *                  *
-        ********************
+        ************ *******
     """.trimIndent().split("\n")
 
     val rows = layout.size
