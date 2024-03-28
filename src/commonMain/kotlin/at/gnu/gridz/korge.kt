@@ -54,6 +54,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     private var fpsText: Text = Text("")
     private var frames = 0
     private var lastTime = game.timer
+    private var stopped = false
 
     override suspend fun SContainer.sceneInit() {
         graphics {
@@ -143,21 +144,25 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 
         keys {
             down(Key.ENTER) {
+                stopped = true
+                solidRect(WIDTH, HEIGHT) { colorMul = Colors["#00000060"] }
                 game.resetLevel()
-                sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition)  {
+                sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
                     GameScene(game, scoreWidth)
                 }
             }
         }
 
         addUpdater(referenceFps = 60.fps) { dt ->
-            val (dx, dy) = movementInput()
-            game.tick(dx, dy, dt)
-            timerText.text = game.timer.toDigitalTime()
-            player.position(game.x, game.y)
-            pointer.position(pointerPostitionFrom(player))
-            updateTiles()
-            updateFps()
+            if (!stopped) {
+                val (dx, dy) = movementInput()
+                game.tick(dx, dy, dt)
+                timerText.text = game.timer.toDigitalTime()
+                player.position(game.x, game.y)
+                pointer.position(pointerPostitionFrom(player))
+                updateTiles()
+                updateFps()
+            }
         }
     }
 

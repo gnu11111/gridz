@@ -3,15 +3,17 @@ Next steps:
 
 - display timer, score and infos
 - reset current level and select another level
+- preserve high scores
+- teleport
+- collect items (keys)
+- design first real level
 
 
 Ideas:
 
 - inventory
-- collect items (keys)
 - move blocks
 - destroy blocks
-- teleport
 - control drone to guide worker
 - enemy controlled by AI
 - mouse movement with A*-algorithm (leave crumbs)
