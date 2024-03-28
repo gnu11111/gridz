@@ -1,6 +1,6 @@
-package at.gnu.gridz
+package at.gnu.gridz.levels
 
-class GridzLevel {
+class TestLevel {
 
     val layout = """
         ************ *******

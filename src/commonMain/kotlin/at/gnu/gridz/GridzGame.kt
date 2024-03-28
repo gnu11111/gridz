@@ -1,10 +1,13 @@
 package at.gnu.gridz
 
 import at.gnu.gridz.GridzTile.Companion.LIFETIME
+import at.gnu.gridz.levels.TestLevel
 import korlibs.time.DateTime
 import kotlin.math.*
 
 class GridzGame : GridzInput {
+
+    enum class State { INIT, LOADED, RUNNING, PAUSED, UNKNOWN }
 
     var x = 0.0
         private set
@@ -18,22 +21,23 @@ class GridzGame : GridzInput {
         private set
     var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
         private set
-    var started = false
+    var state = State.UNKNOWN
         private set
 
     var tileWidth = 0
     var tileHeight = 0
     private var speed = 0.0
     private var preferX = true
-    private var level = GridzLevel()
+    private var level = TestLevel()
     private var start = 0L
 
 
     init {
-        init(GridzLevel())
+        init(TestLevel())
     }
 
-    private fun init(level: GridzLevel) {
+    private fun init(level: TestLevel) {
+        state = State.INIT
         this.level = level
         tileWidth = WIDTH / level.cols
         tileHeight = HEIGHT / level.rows
@@ -41,7 +45,6 @@ class GridzGame : GridzInput {
         y = (tileHeight * level.startY).toDouble()
         distance = 0.0
         angle = 0.0
-        started = false
         timer = 0L
         tiles = arrayListOf()
         for (y in 0 until level.rows) {
@@ -55,22 +58,33 @@ class GridzGame : GridzInput {
             }
             tiles += row
         }
+        state = State.LOADED
     }
 
-    override fun resetLevel() {
-        init(GridzLevel())
+    override fun reset() {
+        init(TestLevel())
+    }
+
+    override fun pause(): State {
+        if (state == State.RUNNING)
+            state = State.PAUSED
+        else if (state == State.PAUSED)
+            state = State.RUNNING
+        return state
     }
 
     override fun tick(inputX: Double, inputY: Double, dt: Float) {
-        if (started) timer = DateTime.nowUnixMillisLong() - start
+        if (state == State.PAUSED) return
         distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
         if (distance > 0.0) {
-            if (!started) {
-                started = true
+            if (state == State.LOADED) {
+                state = State.RUNNING
                 start = DateTime.nowUnixMillisLong()
             }
             angle = atan2(inputX, inputY)
         }
+        if (state != State.RUNNING) return
+        timer += ((dt * 17) + 0.5).toLong()
         val (dx, dy) = updateSpeed(dt)
         val tile = updatePosition(dx, dy)
         updateTiles(dt, tile)

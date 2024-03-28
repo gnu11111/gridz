@@ -1,6 +1,7 @@
 
 import at.gnu.gridz.*
+import at.gnu.gridz.korge.KorgeRenderer
 
 suspend fun main() {
-    GridzRenderer().apply { init(GridzGame()) }
+    KorgeRenderer().apply { init(GridzGame()) }
 }

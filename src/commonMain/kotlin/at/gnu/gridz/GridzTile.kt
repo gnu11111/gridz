@@ -13,6 +13,5 @@ class GridzTile(val x: Int, val y: Int, val type: TileType = TileType.EMPTY) {
 
     companion object {
         const val LIFETIME = 50000
-        val OUT_OF_BOUNDS = GridzTile(-1, -1)
     }
 }

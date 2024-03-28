@@ -24,6 +24,8 @@ Ideas:
 
 Done:
 
+- game status: init, ready, running, paused, ended
+- load resources once at startup
 - colored tiles fade out after a designated lifetime
 - color occupied tiles
 - test levels with different resolutions, tile sizes, rows & columns

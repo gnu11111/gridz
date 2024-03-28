@@ -2,6 +2,7 @@ package at.gnu.gridz
 
 interface GridzInput {
 
-    fun resetLevel()
+    fun reset()
+    fun pause(): GridzGame.State
     fun tick(inputX: Double, inputY: Double, dt: Float)
 }

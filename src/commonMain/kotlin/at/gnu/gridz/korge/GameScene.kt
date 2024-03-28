@@ -1,16 +1,14 @@
-package at.gnu.gridz
+package at.gnu.gridz.korge
 
-import at.gnu.gridz.GridzGame.Companion.HEIGHT
-import at.gnu.gridz.GridzGame.Companion.WIDTH
+import at.gnu.gridz.GridzGame
+import at.gnu.gridz.GridzTile
 import korlibs.event.GameStick
 import korlibs.event.Key
 import korlibs.event.MouseButton
 import korlibs.image.color.Colors
-import korlibs.image.font.readFont
-import korlibs.io.file.std.resourcesVfs
-import korlibs.korge.Korge
 import korlibs.korge.input.keys
-import korlibs.korge.scene.*
+import korlibs.korge.scene.AlphaTransition
+import korlibs.korge.scene.PixelatedScene
 import korlibs.korge.view.*
 import korlibs.math.geom.Point
 import korlibs.math.geom.RectCorners
@@ -22,39 +20,16 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
 
-class GridzRenderer {
-
-    suspend fun init(gridzGame: GridzGame) {
-        val scoreWidth = WIDTH / 3
-        Korge(
-            title = GridzGame.NAME,
-            windowSize = Size(WIDTH + scoreWidth, HEIGHT),
-            virtualSize = Size(WIDTH + scoreWidth, HEIGHT),
-            backgroundColor = Colors[BACKGROUND_COLOR]
-        ) {
-            sceneContainer().changeTo { GameScene(gridzGame, scoreWidth) }
-            addUpdater {
-                if (keys[Key.ESCAPE]) views.gameWindow.close(0)
-            }
-        }
-    }
-
-    companion object {
-        const val BACKGROUND_COLOR = "#2b1020"
-    }
-}
-
-
 //class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 //    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
-class GameScene(private val game: GridzGame, private val scoreWidth: Int)
-    : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
+class GameScene(private val game: GridzGame, private val assets: KorgeAssets, private val scoreWidth: Int)
+    : PixelatedScene(GridzGame.WIDTH + scoreWidth, GridzGame.HEIGHT, sceneSmoothing = false) {
 
     private var timerText: Text = Text("")
     private var fpsText: Text = Text("")
     private var frames = 0
     private var lastTime = game.timer
-    private var stopped = false
+    private var dimmed = SolidRect(0, 0)
 
     override suspend fun SContainer.sceneInit() {
         graphics {
@@ -81,52 +56,57 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
         container {
 //            alignLeftToRightOf(game)
 
-            roundRect(Size(scoreWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#202020"], Colors["#a03080"], 6) {
-                position(WIDTH + 3, 3)
+            roundRect(Size(scoreWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#202020"], Colors["#802020"], 6) {
+                position(GridzGame.WIDTH + 3, 3)
             }
 
-            val titleFont = resourcesVfs["fonts/ARCADE.TTF"].readFont()
+            val titleFont = assets.font(KorgeAssets.Fonts.TITLE)
             text("grid", 48, Colors.ORANGE, titleFont) {
 //                setTextBounds(Rectangle(0, 0, scoreWidth, 48))
-                position(WIDTH + 30, 10)
+                position(GridzGame.WIDTH + 30, 10)
             }
-            text("Z", 48, Colors.RED, titleFont) {
-                position(WIDTH + 108, 10)
-            }
-
-            val digitalFont = resourcesVfs["fonts/Open 24 Display St.ttf"].readFont()
-            timerText = text("00:00:00", 48, Colors.MEDIUMSEAGREEN, digitalFont) {
-                position(WIDTH + 10, 48)
-            }
-            fpsText = text("0", 18, Colors.WHITESMOKE, digitalFont) {
-                position(4, 0)
+            text("Z", 48, Colors.YELLOW, titleFont) {
+                position(GridzGame.WIDTH + 108, 10)
             }
 
-            val infoFont = resourcesVfs["fonts/joystix monospace.otf"].readFont()
-            text("Level 1", 16, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 35, 116)
+            val digitalFont = assets.font(KorgeAssets.Fonts.DIGITAL)
+            timerText = text("00:00:00", 24, Colors.WHITESMOKE, digitalFont) {
+                position(GridzGame.WIDTH + 12, 64)
             }
-            text("Best time", 16, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 22, 145)
+            fpsText = text("0", 14, Colors.YELLOW, digitalFont) {
+                position(4, 4)
             }
-            text("00:00:00", 16, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 30, 165)
+
+            val defaultFont = assets.font(KorgeAssets.Fonts.DEFAULT)
+            text("Level 1", 16, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 35, 110)
+            }
+            text("Best time", 16, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 22, 140)
+            }
+            text("00:00:00", 16, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 30, 160)
             }
 
             for (i in 0..9) {
-                solidRect(24, 24, Colors.DIMGREY) {
-                    position(WIDTH + 12 + (i % 5) * 28, 200 + (i / 5) * 28)
+                roundRect(Size(24, 24), RectCorners(0), Colors["#505050"], Colors.WHITE, 2) {
+                    position(GridzGame.WIDTH + 12 + (i % 5) * 28, 200 + (i / 5) * 28)
                 }
             }
 
-            text("Collect 3 Keys", 12, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 10, 270)
+            text("Collect 3 Keys", 12, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 10, 270)
             }
-            text("Port 4 Times", 12, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 10, 290)
+            text("Port 4 Times", 12, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 10, 290)
             }
-            text("Color 50 Tiles", 12, Colors.WHITESMOKE, infoFont) {
-                position(WIDTH + 10, 310)
+            text("Color 50 Tiles", 12, Colors.WHITESMOKE, defaultFont) {
+                position(GridzGame.WIDTH + 10, 310)
+            }
+
+            dimmed = solidRect(GridzGame.WIDTH, GridzGame.HEIGHT) {
+                colorMul = Colors["#00000060"]
+                visible = false
             }
         }
     }
@@ -144,17 +124,20 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 
         keys {
             down(Key.ENTER) {
-                stopped = true
-                solidRect(WIDTH, HEIGHT) { colorMul = Colors["#00000060"] }
-                game.resetLevel()
-                sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-                    GameScene(game, scoreWidth)
+                dimmed.visible = true
+                game.reset()
+                sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
+                    GameScene(game, assets, scoreWidth)
                 }
+            }
+            down(Key.P) {
+                game.pause()
+                dimmed.visible = (game.state == GridzGame.State.PAUSED)
             }
         }
 
         addUpdater(referenceFps = 60.fps) { dt ->
-            if (!stopped) {
+            if ((game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
                 val (dx, dy) = movementInput()
                 game.tick(dx, dy, dt)
                 timerText.text = game.timer.toDigitalTime()
@@ -167,7 +150,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     private fun updateFps() {
-        if (!game.started) return
+        if (game.state != GridzGame.State.RUNNING) return
         if ((game.timer - lastTime) < 1000L)
             frames++
         else {
