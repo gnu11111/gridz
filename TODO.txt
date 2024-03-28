@@ -2,6 +2,7 @@
 Next steps:
 
 - display timer, score and infos
+- reset current level and select another level
 
 
 Ideas:
@@ -15,6 +16,8 @@ Ideas:
 - enemy controlled by AI
 - mouse movement with A*-algorithm (leave crumbs)
 - design levels with LDTk
+- create sounds
+- play background music
 
 
 Done:
