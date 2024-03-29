@@ -1,11 +1,11 @@
 
 Next steps:
 
-- display timer, score and infos
-- preserve high scores
-- teleport
+- portals
 - collect items (keys)
 - design first real level
+- display timer, score and infos
+- preserve high scores
 
 
 Ideas:

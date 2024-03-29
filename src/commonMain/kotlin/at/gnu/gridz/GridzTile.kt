@@ -2,16 +2,20 @@ package at.gnu.gridz
 
 import korlibs.korge.view.SolidRect
 
-class GridzTile(val x: Int, val y: Int, val type: TileType = TileType.EMPTY) {
-
-    var lit: Int = 0
+sealed class GridzTile(open val x: Int, open val y: Int) {
     var component: SolidRect? = null
+}
 
-    enum class TileType {
-        EMPTY, WALL
-    }
+class Empty(override val x: Int, override val y: Int) : GridzTile(x, y) {
+    var lit: Int = 0
 
     companion object {
-        const val LIFETIME = 50000
+        const val LIT_TIME = 50000
     }
 }
+
+class Wall(override val x: Int, override val y: Int) : GridzTile(x, y)
+
+class Exit(override val x: Int, override val y: Int) : GridzTile(x, y)
+
+class Portal(override val x: Int, override val y: Int, val id: Int = 0) : GridzTile(x, y)

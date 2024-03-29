@@ -4,6 +4,10 @@ sealed interface GridzEvent
 
 data object NothingHappened : GridzEvent
 
+data object GameEnded : GridzEvent
+
 class TileEntered(val tile: GridzTile) : GridzEvent
 
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
+
+class Teleported(val tile: GridzTile) : GridzEvent

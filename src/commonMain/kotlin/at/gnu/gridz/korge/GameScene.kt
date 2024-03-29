@@ -11,7 +11,7 @@ import korlibs.korge.input.keys
 import korlibs.korge.scene.AlphaTransition
 import korlibs.korge.scene.PixelatedScene
 import korlibs.korge.view.*
-import korlibs.korge.view.align.alignLeftToRightOf
+import korlibs.korge.view.align.alignRightToRightOf
 import korlibs.math.geom.Point
 import korlibs.math.geom.RectCorners
 import korlibs.math.geom.Size
@@ -32,29 +32,50 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
     private var frames = 0
     private var lastTime = game.timer
     private var dimmed = SolidRect(0, 0)
+    private var transition = false
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = assets.font(KorgeAssets.Fonts.TITLE)
         val digitalFont = assets.font(KorgeAssets.Fonts.DIGITAL)
         val defaultFont = assets.font(KorgeAssets.Fonts.DEFAULT)
+        val teleportColors = listOf(Colors.GREEN, Colors.RED, Colors.BLUE, Colors.ORANGE, Colors.WHITE)
         container {
 
-            val main = container {
+            container {
                 for (row in game.tiles) {
                     for (tile in row) {
-                        val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
-                        tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
-                            position(tile.x * game.tileWidth, tile.y * game.tileHeight)
-                        }
-                        if (tile.type == GridzTile.TileType.WALL) {
-                            roundRect(
-                                Size(game.tileWidth - 4, game.tileHeight - 4),
-                                RectCorners(4),
-                                Colors["#0000a0"],
-                                Colors["#1020ff"],
-                                4
-                            ) {
-                                position((tile.x * game.tileWidth) + 2, (tile.y * game.tileHeight) + 2)
+                        when (tile) {
+                            is Wall -> {
+                                roundRect(
+                                    Size(game.tileWidth - 4, game.tileHeight - 4),
+                                    RectCorners(4),
+                                    Colors["#0000a0"],
+                                    Colors["#1020ff"],
+                                    4
+                                ) {
+                                    position((tile.x * game.tileWidth) + 2, (tile.y * game.tileHeight) + 2)
+                                }
+                            }
+                            is Portal -> {
+                                circle(
+                                    game.tileWidth / 4,
+                                    teleportColors[tile.id % teleportColors.size],
+                                    Colors.DARKORANGE,
+                                    4
+                                ) {
+                                    position((tile.x + 0.25) * game.tileWidth, (tile.y + 0.25) * game.tileHeight)
+                                }
+                            }
+                            is Exit -> {
+                                solidRect(game.tileWidth / 2, game.tileHeight / 2, Colors.RED) {
+                                    position((tile.x + 0.25) * game.tileWidth, (tile.y + 0.25) * game.tileHeight)
+                                }
+                            }
+                            else -> {
+                                val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
+                                tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
+                                    position(tile.x * game.tileWidth, tile.y * game.tileHeight)
+                                }
                             }
                         }
                     }
@@ -111,11 +132,11 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
                     position(10, 330)
                 }
 
-                alignLeftToRightOf(main)
+                alignRightToRightOf(this@sceneInit)
             }
 
             dimmed = solidRect(WIDTH + scoreWidth, HEIGHT) {
-                colorMul = Colors["#00000060"]
+                colorMul = Colors["#00000040"]
                 visible = false
             }
         }
@@ -134,9 +155,12 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
 
         keys {
             down(Key.ENTER) {
-                dimmed.visible = true
+                transition = true
                 game.reset()
-                sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
+                sceneContainer.changeTo(
+                    time = 0.5.seconds,
+                    transition = AlphaTransition
+                ) {
                     GameScene(game, assets, scoreWidth)
                 }
             }
@@ -145,12 +169,14 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
                 dimmed.visible = (game.state == GridzGame.State.PAUSED)
             }
             down(Key.N) {
+                transition = true
                 game.next()
                 sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
                     GameScene(game, assets, scoreWidth)
                 }
             }
             down(Key.B) {
+                transition = true
                 game.previous()
                 sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
                     GameScene(game, assets, scoreWidth)
@@ -160,7 +186,7 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
 
         addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = movementInput()
-            if ((game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
+            if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
                 val events = game.tick(dx, dy, dt)
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x, game.y)

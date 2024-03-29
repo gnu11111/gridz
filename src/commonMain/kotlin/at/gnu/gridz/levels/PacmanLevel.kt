@@ -1,6 +1,6 @@
 package at.gnu.gridz.levels
 
-open class PacmanLevel : GridzLevel() {
+class PacmanLevel : GridzLevel() {
 
     override val layout = """
         *******************

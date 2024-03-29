@@ -1,16 +1,17 @@
 package at.gnu.gridz
 
-import at.gnu.gridz.GridzTile.Companion.LIFETIME
+import at.gnu.gridz.levels.EmptyLevel
 import at.gnu.gridz.levels.GridzLevel
 import at.gnu.gridz.levels.PacmanLevel
+import at.gnu.gridz.levels.PortalsLevel
 import korlibs.time.DateTime
 import kotlin.math.*
 
 class GridzGame : GridzInput {
 
-    enum class State { INIT, LOADED, RUNNING, PAUSED, UNKNOWN }
+    enum class State { INIT, LOADED, RUNNING, PAUSED, ENDED, UNKNOWN }
 
-    private val levels = listOf(GridzLevel(), PacmanLevel())
+    private val levels = listOf(GridzLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
     var x = 0.0
         private set
@@ -56,11 +57,14 @@ class GridzGame : GridzInput {
         for (y in 0 until level.rows) {
             val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {
-                val type = when (level.layout.getOrNull(y)?.getOrNull(x)) {
-                    '*' -> GridzTile.TileType.WALL
-                    else -> GridzTile.TileType.EMPTY
+                val c = level.layout.getOrNull(y)?.getOrNull(x) ?: ' '
+                val tile = when {
+                    (c == '*') -> Wall(x, y)
+                    (c == 'x') -> Exit(x, y)
+                    c.isDigit() -> Portal(x, y, c.digitToInt())
+                    else -> Empty(x, y)
                 }
-                row += GridzTile(x, y, type)
+                row += tile
             }
             tiles += row
         }
@@ -110,7 +114,25 @@ class GridzGame : GridzInput {
         val events = mutableListOf<GridzEvent>()
         if (tile != null) {
             events += TileEntered(tile)
-            tile.lit = LIFETIME
+            when (tile) {
+                is Exit -> {
+                    x = (tile.x + 0.5) * tileWidth
+                    y = (tile.y + 0.5) * tileHeight
+                    state = State.ENDED
+                    return events + GameEnded
+                }
+                is Empty -> tile.lit = Empty.LIT_TIME
+                is Portal -> {
+                    tiles.firstNotNullOfOrNull { row ->
+                        row.firstOrNull { (it !== tile) && (it is Portal) && (it.id == tile.id) }
+                    }?.let {
+                        x = (it.x + 0.5) * tileWidth
+                        y = (it.y + 0.5) * tileHeight
+                        events += Teleported(it)
+                    }
+                }
+                is Wall -> error("I'm stuck!")
+            }
         }
         events += updateTiles(dt)
         return events
@@ -119,7 +141,7 @@ class GridzGame : GridzInput {
     private fun updateTiles(dt: Float): List<GridzEvent> {
         val events = mutableListOf<GridzEvent>()
         tiles.forEach { row -> row.forEach {
-            if (it.lit > 0) {
+            if ((it is Empty) && (it.lit > 0)) {
                 it.lit = (it.lit - (dt * 100).toInt()).coerceAtLeast(0)
                 if (it.lit <= 0) events += TileLitDeceased(it)
             }
@@ -225,7 +247,7 @@ class GridzGame : GridzInput {
         tiles.getOrNull((y + level.rows) % level.rows)?.getOrNull((x + level.cols) % level.cols)
 
     private fun isWall(x: Int, y: Int): Boolean =
-        (tile(x, y)?.type == GridzTile.TileType.WALL)
+        tile(x, y) is Wall
 
 
     companion object {
