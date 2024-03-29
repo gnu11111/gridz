@@ -1,8 +1,8 @@
 package at.gnu.gridz.levels
 
-class TestLevel {
+open class GridzLevel {
 
-    val layout = """
+    open val layout = """
         ************ *******
         *                  *
         *            ****  *
@@ -25,8 +25,11 @@ class TestLevel {
         ************ *******
     """.trimIndent().split("\n")
 
-    val rows = layout.size
-    val cols = layout.maxOf { it.length }
-    val startX = cols / 2
-    val startY = rows / 2
+    open val number = 1
+    open val title = "Test"
+
+    open val rows: Int get() = layout.size
+    open val cols: Int get() = layout.maxOf { it.length }
+    open val startX: Int get() = cols / 2
+    open val startY: Int get() = rows / 2
 }

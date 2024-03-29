@@ -1,13 +1,16 @@
 package at.gnu.gridz
 
 import at.gnu.gridz.GridzTile.Companion.LIFETIME
-import at.gnu.gridz.levels.TestLevel
+import at.gnu.gridz.levels.GridzLevel
+import at.gnu.gridz.levels.PacmanLevel
 import korlibs.time.DateTime
 import kotlin.math.*
 
 class GridzGame : GridzInput {
 
     enum class State { INIT, LOADED, RUNNING, PAUSED, UNKNOWN }
+
+    private val levels = listOf(GridzLevel(), PacmanLevel())
 
     var x = 0.0
         private set
@@ -23,26 +26,29 @@ class GridzGame : GridzInput {
         private set
     var state = State.UNKNOWN
         private set
+    var level = levels.first()
+        private set
 
     var tileWidth = 0
     var tileHeight = 0
     private var speed = 0.0
     private var preferX = true
-    private var level = TestLevel()
+    private var levelNumber = 0
     private var start = 0L
 
 
     init {
-        init(TestLevel())
+        init(0)
     }
 
-    private fun init(level: TestLevel) {
+    private fun init(levelNumber: Int) {
         state = State.INIT
-        this.level = level
+        this.levelNumber = levelNumber
+        this.level = levels[levelNumber]
         tileWidth = WIDTH / level.cols
         tileHeight = HEIGHT / level.rows
-        x = (tileWidth * level.startX).toDouble()
-        y = (tileHeight * level.startY).toDouble()
+        x = tileWidth * (level.startX + 0.5)
+        y = tileHeight * (level.startY + 0.5)
         distance = 0.0
         angle = 0.0
         timer = 0L
@@ -62,7 +68,19 @@ class GridzGame : GridzInput {
     }
 
     override fun reset() {
-        init(TestLevel())
+        init(levelNumber)
+    }
+
+    override fun next(): GridzLevel {
+        val next = (levelNumber + 1) % levels.size
+        init(next)
+        return levels[next]
+    }
+
+    override fun previous(): GridzLevel {
+        val previous = (levelNumber + levels.size - 1) % levels.size
+        init(previous)
+        return levels[previous]
     }
 
     override fun pause(): State {
@@ -73,8 +91,9 @@ class GridzGame : GridzInput {
         return state
     }
 
-    override fun tick(inputX: Double, inputY: Double, dt: Float) {
-        if (state == State.PAUSED) return
+    override fun tick(inputX: Double, inputY: Double, dt: Float): List<GridzEvent> {
+        if (state == State.PAUSED)
+            return listOf(NothingHappened)
         distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
         if (distance > 0.0) {
             if (state == State.LOADED) {
@@ -83,16 +102,29 @@ class GridzGame : GridzInput {
             }
             angle = atan2(inputX, inputY)
         }
-        if (state != State.RUNNING) return
+        if (state != State.RUNNING)
+            return listOf(NothingHappened)
         timer += ((dt * 17) + 0.5).toLong()
         val (dx, dy) = updateSpeed(dt)
         val tile = updatePosition(dx, dy)
-        updateTiles(dt, tile)
+        val events = mutableListOf<GridzEvent>()
+        if (tile != null) {
+            events += TileEntered(tile)
+            tile.lit = LIFETIME
+        }
+        events += updateTiles(dt)
+        return events
     }
 
-    private fun updateTiles(dt: Float, tile: GridzTile?) {
-        tiles.forEach { row -> row.forEach { if (it.lit > 0) it.lit = (it.lit - (dt * 100).toInt()).coerceAtLeast(0) } }
-        if (tile != null) tile.lit = LIFETIME
+    private fun updateTiles(dt: Float): List<GridzEvent> {
+        val events = mutableListOf<GridzEvent>()
+        tiles.forEach { row -> row.forEach {
+            if (it.lit > 0) {
+                it.lit = (it.lit - (dt * 100).toInt()).coerceAtLeast(0)
+                if (it.lit <= 0) events += TileLitDeceased(it)
+            }
+        } }
+        return events
     }
 
     private fun updateSpeed(dt: Float): Pair<Double, Double> {
@@ -101,8 +133,8 @@ class GridzGame : GridzInput {
             (speed + (factor * distance)).coerceIn(0.0, factor * 7.0)
         else
             (speed - (factor * 1.0)).coerceAtLeast(0.0)
-        val dx = speed * sin(angle)
-        val dy = speed * cos(angle)
+        val dx = (speed * sin(angle)).coerceIn((-tileWidth / 2.0), (tileWidth / 2.0))
+        val dy = speed * cos(angle).coerceIn((-tileHeight / 2.0), (tileHeight / 2.0))
         return (if (abs(dx) < 0.1) 0.0 else dx) to (if (abs(dy) < 0.1) 0.0 else dy)
     }
 

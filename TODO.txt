@@ -2,7 +2,6 @@
 Next steps:
 
 - display timer, score and infos
-- reset current level and select another level
 - preserve high scores
 - teleport
 - collect items (keys)
@@ -24,6 +23,8 @@ Ideas:
 
 Done:
 
+- tick() returns a list of events to the view
+- reset the current level and select a different level
 - game status: init, ready, running, paused, ended
 - load resources once at startup
 - colored tiles fade out after a designated lifetime
