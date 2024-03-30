@@ -6,6 +6,7 @@ Next steps:
 - design first real level
 - display timer, score and infos
 - preserve high scores
+- convert rendered graphics into sprites
 
 
 Ideas:

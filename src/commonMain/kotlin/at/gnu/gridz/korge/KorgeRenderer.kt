@@ -14,14 +14,14 @@ class KorgeRenderer {
 
     suspend fun init(gridzGame: GridzGame) {
         val scoreWidth = WIDTH / 3
-        val assets = KorgeAssets().apply { load() }
+        KorgeAssets.load()
         Korge(
             title = GridzGame.NAME,
             windowSize = Size(WIDTH + scoreWidth, HEIGHT),
             virtualSize = Size(WIDTH + scoreWidth, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { GameScene(gridzGame, assets, scoreWidth) }
+            sceneContainer().changeTo { GameScene(gridzGame, scoreWidth) }
             addUpdater {
                 if (keys[Key.ESCAPE]) views.gameWindow.close(0)
             }
@@ -29,6 +29,6 @@ class KorgeRenderer {
     }
 
     companion object {
-        const val BACKGROUND_COLOR = "#2b1020"
+        const val BACKGROUND_COLOR = "#1a1a1a"
     }
 }

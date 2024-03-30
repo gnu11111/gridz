@@ -4,13 +4,15 @@ import korlibs.image.font.Font
 import korlibs.image.font.readFont
 import korlibs.io.file.std.resourcesVfs
 
-class KorgeAssets {
+object KorgeAssets {
 
     enum class Fonts(val filename: String) {
         TITLE("ARCADE.TTF"),
         DIGITAL("Receiptional Receipt.ttf"),
         DEFAULT("joystix monospace.otf");
     }
+
+    private const val FONTS_DIRECTORY = "fonts/"
 
     private lateinit var fonts: Map<Fonts, Font>
 
@@ -25,9 +27,4 @@ class KorgeAssets {
 
     fun font(font: Fonts): Font =
         fonts.getOrElse(font) { fonts[Fonts.DEFAULT]!! }
-
-
-    companion object {
-        const val FONTS_DIRECTORY = "fonts/"
-    }
 }

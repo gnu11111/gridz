@@ -24,7 +24,7 @@ import kotlin.math.sin
 
 //class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 //    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
-class GameScene(private val game: GridzGame, private val assets: KorgeAssets, private val scoreWidth: Int)
+class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
 
     private var timerText: Text = Text("")
@@ -35,9 +35,9 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
     private var transition = false
 
     override suspend fun SContainer.sceneInit() {
-        val titleFont = assets.font(KorgeAssets.Fonts.TITLE)
-        val digitalFont = assets.font(KorgeAssets.Fonts.DIGITAL)
-        val defaultFont = assets.font(KorgeAssets.Fonts.DEFAULT)
+        val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
+        val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
+        val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
         val teleportColors = listOf(Colors.GREEN, Colors.RED, Colors.BLUE, Colors.ORANGE, Colors.WHITE)
         container {
 
@@ -161,7 +161,7 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
                     time = 0.5.seconds,
                     transition = AlphaTransition
                 ) {
-                    GameScene(game, assets, scoreWidth)
+                    GameScene(game, scoreWidth)
                 }
             }
             down(Key.P) {
@@ -172,14 +172,14 @@ class GameScene(private val game: GridzGame, private val assets: KorgeAssets, pr
                 transition = true
                 game.next()
                 sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-                    GameScene(game, assets, scoreWidth)
+                    GameScene(game, scoreWidth)
                 }
             }
             down(Key.B) {
                 transition = true
                 game.previous()
                 sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-                    GameScene(game, assets, scoreWidth)
+                    GameScene(game, scoreWidth)
                 }
             }
         }
