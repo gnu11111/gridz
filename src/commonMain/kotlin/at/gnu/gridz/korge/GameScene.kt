@@ -3,10 +3,12 @@ package at.gnu.gridz.korge
 import at.gnu.gridz.*
 import at.gnu.gridz.GridzGame.Companion.HEIGHT
 import at.gnu.gridz.GridzGame.Companion.WIDTH
+import korlibs.event.GameButton
 import korlibs.event.GameStick
 import korlibs.event.Key
 import korlibs.event.MouseButton
 import korlibs.image.color.Colors
+import korlibs.korge.input.gamepad
 import korlibs.korge.input.keys
 import korlibs.korge.scene.AlphaTransition
 import korlibs.korge.scene.PixelatedScene
@@ -33,11 +35,13 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     private var lastTime = game.timer
     private var dimmed = SolidRect(0, 0)
     private var transition = false
+    private var allowGamepadInput = false
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
         val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
         val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
+        val wall = KorgeAssets.image(KorgeAssets.Images.WALL)
         val teleportColors = listOf(Colors.GREEN, Colors.RED, Colors.BLUE, Colors.ORANGE, Colors.WHITE)
         container {
 
@@ -45,16 +49,9 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
                 for (row in game.tiles) {
                     for (tile in row) {
                         when (tile) {
-                            is Wall -> {
-                                roundRect(
-                                    Size(game.tileWidth - 4, game.tileHeight - 4),
-                                    RectCorners(4),
-                                    Colors["#0000a0"],
-                                    Colors["#1020ff"],
-                                    4
-                                ) {
-                                    position((tile.x * game.tileWidth) + 2, (tile.y * game.tileHeight) + 2)
-                                }
+                            is Wall -> image(wall) {
+                                size(game.tileWidth, game.tileHeight)
+                                position((tile.x * game.tileWidth), (tile.y * game.tileHeight))
                             }
                             is Portal -> {
                                 circle(
@@ -117,7 +114,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
                 }
 
                 for (i in 0..9) {
-                    roundRect(Size(24, 24), RectCorners(0), Colors["#505050"], Colors.WHITE, 2) {
+                    roundRect(Size(24, 24), RectCorners(0), Colors["#402020"], Colors["#a08080"], 2) {
                         position(12 + (i % 5) * 28, 220 + (i / 5) * 28)
                     }
                 }
@@ -154,33 +151,25 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
         val pointer = circle(radius = game.tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
         keys {
-            down(Key.ENTER) {
-                transition = true
-                game.reset()
-                sceneContainer.changeTo(
-                    time = 0.5.seconds,
-                    transition = AlphaTransition
-                ) {
-                    GameScene(game, scoreWidth)
-                }
-            }
-            down(Key.P) {
-                game.pause()
-                dimmed.visible = (game.state == GridzGame.State.PAUSED)
-            }
-            down(Key.N) {
-                transition = true
-                game.next()
-                sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-                    GameScene(game, scoreWidth)
-                }
-            }
-            down(Key.B) {
-                transition = true
-                game.previous()
-                sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-                    GameScene(game, scoreWidth)
-                }
+            down(Key.ENTER) { resetScene() }
+            down(Key.P) { pauseScene() }
+            down(Key.N) { nextScene() }
+            down(Key.B) { previousScene() }
+        }
+
+        gamepad {
+            button(0) { pressed, button, _ ->
+                if (pressed && allowGamepadInput) {
+                    when (button) {
+                        GameButton.XBOX_B -> resetScene()
+                        GameButton.START -> pauseScene()
+                        GameButton.L1 -> previousScene()
+                        GameButton.R1 -> nextScene()
+                        GameButton.SELECT -> views.gameWindow.close(0)
+                        else -> {}
+                    }
+                } else
+                    allowGamepadInput = true
             }
         }
 
@@ -194,6 +183,35 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
                 updateTiles(events)
                 updateFps()
             }
+        }
+    }
+
+    private suspend fun resetScene() {
+        transition = true
+        game.reset()
+        sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
+            GameScene(game, scoreWidth)
+        }
+    }
+
+    private fun pauseScene() {
+        game.pause()
+        dimmed.visible = (game.state == GridzGame.State.PAUSED)
+    }
+
+    private suspend fun nextScene() {
+        transition = true
+        game.next()
+        sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
+            GameScene(game, scoreWidth)
+        }
+    }
+
+    private suspend fun previousScene() {
+        transition = true
+        game.previous()
+        sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
+            GameScene(game, scoreWidth)
         }
     }
 
