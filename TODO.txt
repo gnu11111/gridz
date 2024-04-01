@@ -6,7 +6,7 @@ Next steps:
 - design first real level
 - display timer, score and infos
 - preserve high scores
-- convert rendered graphics into sprites
+- convert rendered graphics into images
 
 
 Ideas:
@@ -24,6 +24,7 @@ Ideas:
 
 Done:
 
+- use unix timestamp and subtract pause durations
 - tick() returns a list of events to the view
 - reset the current level and select a different level
 - game status: init, ready, running, paused, ended

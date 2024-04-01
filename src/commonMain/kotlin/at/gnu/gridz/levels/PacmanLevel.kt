@@ -1,6 +1,6 @@
 package at.gnu.gridz.levels
 
-class PacmanLevel : GridzLevel() {
+class PacmanLevel : TestLevel() {
 
     override val layout = """
         *******************
@@ -27,7 +27,6 @@ class PacmanLevel : GridzLevel() {
         *******************
     """.trimIndent().split("\n")
 
-    override val number = 2
     override val title = "Pacman!"
     override val startY = 16
 }

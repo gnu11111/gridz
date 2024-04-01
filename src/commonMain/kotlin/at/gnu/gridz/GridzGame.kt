@@ -1,7 +1,7 @@
 package at.gnu.gridz
 
 import at.gnu.gridz.levels.EmptyLevel
-import at.gnu.gridz.levels.GridzLevel
+import at.gnu.gridz.levels.TestLevel
 import at.gnu.gridz.levels.PacmanLevel
 import at.gnu.gridz.levels.PortalsLevel
 import korlibs.time.DateTime
@@ -11,47 +11,132 @@ class GridzGame : GridzInput {
 
     enum class State { INIT, LOADED, RUNNING, PAUSED, ENDED, UNKNOWN }
 
-    private val levels = listOf(GridzLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
+    private val levels = listOf(TestLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
+    var direction = 0.0
+        private set
+    var acceleration = 0.0
+        private set
+    var level = levels.first()
+        private set
+    var state = State.UNKNOWN
+        private set
+    var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
+        private set
+    var tileWidth = 0
+        private set
+    var tileHeight = 0
+        private set
+    var timer = 0L
+        private set
     var x = 0.0
         private set
     var y = 0.0
         private set
-    var distance = 0.0
-        private set
-    var angle = 0.0
-        private set
-    var timer = 0L
-        private set
-    var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
-        private set
-    var state = State.UNKNOWN
-        private set
-    var level = levels.first()
+    var levelNumber = 0
         private set
 
-    var tileWidth = 0
-    var tileHeight = 0
-    private var speed = 0.0
     private var preferX = true
-    private var levelNumber = 0
+    private var speed = 0.0
     private var start = 0L
+    private var startPause = 0L
+    private var pauseTime = 0L
+    private var action: GridzAction = NoAction
 
 
     init {
         init(0)
     }
 
+    override fun reset() {
+        init(levelNumber)
+    }
+
+    override fun next(): TestLevel {
+        val next = (levelNumber + 1) % levels.size
+        init(next)
+        return levels[next]
+    }
+
+    override fun previous(): TestLevel {
+        val previous = (levelNumber + levels.size - 1) % levels.size
+        init(previous)
+        return levels[previous]
+    }
+
+    override fun pause(): State {
+        if (state == State.RUNNING) {
+            state = State.PAUSED
+            startPause = DateTime.nowUnixMillisLong()
+        } else if (state == State.PAUSED) {
+            state = State.RUNNING
+            pauseTime += DateTime.nowUnixMillisLong() - startPause
+        }
+        return state
+    }
+
+    override fun tick(inputX: Double, inputY: Double): List<GridzEvent> {
+        if (state == State.PAUSED)
+            return listOf(NothingHappened)
+        else if (state == State.LOADED) {
+            if ((inputX != 0.0) || (inputY != 0.0)) {
+                state = State.RUNNING
+                start = DateTime.nowUnixMillisLong()
+            } else
+                return listOf(NothingHappened)
+        }
+        val lastTimer = timer
+        timer = DateTime.nowUnixMillisLong() - start - pauseTime
+        val dt = timer - lastTimer
+        if (action != NoAction) {
+            val (state, x, y) = action.perform(dt)
+            if (state == GridzAction.State.FINISHED)
+                action = NoAction
+            this.x = x
+            this.y = y
+            return listOf(NothingHappened)
+        }
+        acceleration = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
+        direction = atan2(inputX, inputY)
+        val (dx, dy) = updateSpeed(dt)
+        val tile = updatePosition(dx, dy)
+        val events = mutableListOf<GridzEvent>()
+        if (tile != null) {
+            events += TileEntered(tile)
+            when (tile) {
+                is Exit -> {
+                    x = (tile.x + 0.5) * tileWidth
+                    y = (tile.y + 0.5) * tileHeight
+                    state = State.ENDED
+                    return events + GameEnded
+                }
+                is Empty -> tile.lit = Empty.LIT_TIME
+                is Portal -> {
+                    tiles.firstNotNullOfOrNull { row ->
+                        row.firstOrNull { (it !== tile) && (it is Portal) && (it.id == tile.id) }
+                    }?.let {
+                        action = Teleport(this, tile.x, tile.y, it.x, it.y)
+                        events += Teleporting(it)
+                    }
+                }
+                is Wall -> reset()
+            }
+        }
+        events += updateTiles(dt)
+        return events
+    }
+
     private fun init(levelNumber: Int) {
         state = State.INIT
         this.levelNumber = levelNumber
         this.level = levels[levelNumber]
+        pauseTime = 0L
         tileWidth = WIDTH / level.cols
         tileHeight = HEIGHT / level.rows
         x = tileWidth * (level.startX + 0.5)
         y = tileHeight * (level.startY + 0.5)
-        distance = 0.0
-        angle = 0.0
+        acceleration = 0.0
+        direction = 0.0
         timer = 0L
         tiles = arrayListOf()
         for (y in 0 until level.rows) {
@@ -71,92 +156,25 @@ class GridzGame : GridzInput {
         state = State.LOADED
     }
 
-    override fun reset() {
-        init(levelNumber)
-    }
-
-    override fun next(): GridzLevel {
-        val next = (levelNumber + 1) % levels.size
-        init(next)
-        return levels[next]
-    }
-
-    override fun previous(): GridzLevel {
-        val previous = (levelNumber + levels.size - 1) % levels.size
-        init(previous)
-        return levels[previous]
-    }
-
-    override fun pause(): State {
-        if (state == State.RUNNING)
-            state = State.PAUSED
-        else if (state == State.PAUSED)
-            state = State.RUNNING
-        return state
-    }
-
-    override fun tick(inputX: Double, inputY: Double, dt: Float): List<GridzEvent> {
-        if (state == State.PAUSED)
-            return listOf(NothingHappened)
-        distance = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
-        if (distance > 0.0) {
-            if (state == State.LOADED) {
-                state = State.RUNNING
-                start = DateTime.nowUnixMillisLong()
-            }
-            angle = atan2(inputX, inputY)
-        }
-        if (state != State.RUNNING)
-            return listOf(NothingHappened)
-        timer += ((dt * 17) + 0.5).toLong()
-        val (dx, dy) = updateSpeed(dt)
-        val tile = updatePosition(dx, dy)
-        val events = mutableListOf<GridzEvent>()
-        if (tile != null) {
-            events += TileEntered(tile)
-            when (tile) {
-                is Exit -> {
-                    x = (tile.x + 0.5) * tileWidth
-                    y = (tile.y + 0.5) * tileHeight
-                    state = State.ENDED
-                    return events + GameEnded
-                }
-                is Empty -> tile.lit = Empty.LIT_TIME
-                is Portal -> {
-                    tiles.firstNotNullOfOrNull { row ->
-                        row.firstOrNull { (it !== tile) && (it is Portal) && (it.id == tile.id) }
-                    }?.let {
-                        x = (it.x + 0.5) * tileWidth
-                        y = (it.y + 0.5) * tileHeight
-                        events += Teleported(it)
-                    }
-                }
-                is Wall -> error("I'm stuck!")
-            }
-        }
-        events += updateTiles(dt)
-        return events
-    }
-
-    private fun updateTiles(dt: Float): List<GridzEvent> {
+    private fun updateTiles(dt: Long): List<GridzEvent> {
         val events = mutableListOf<GridzEvent>()
         tiles.forEach { row -> row.forEach {
-            if ((it is Empty) && (it.lit > 0)) {
-                it.lit = (it.lit - (dt * 100).toInt()).coerceAtLeast(0)
-                if (it.lit <= 0) events += TileLitDeceased(it)
+            if ((it is Empty) && (it.lit > 0L)) {
+                it.lit = (it.lit - (dt * 10L)).coerceAtLeast(0L)
+                if (it.lit <= 0L) events += TileLitDeceased(it)
             }
         } }
         return events
     }
 
-    private fun updateSpeed(dt: Float): Pair<Double, Double> {
-        val factor = dt * tileWidth / 50.0
-        speed = if (distance != 0.0)
-            (speed + (factor * distance)).coerceIn(0.0, factor * 7.0)
+    private fun updateSpeed(dt: Long): Pair<Double, Double> {
+        val factor = dt * tileWidth / 500.0
+        speed = if (acceleration != 0.0)
+            (speed + (factor * acceleration)).coerceIn(0.0, tileWidth / 14.0)
         else
             (speed - (factor * 1.0)).coerceAtLeast(0.0)
-        val dx = (speed * sin(angle)).coerceIn((-tileWidth / 2.0), (tileWidth / 2.0))
-        val dy = speed * cos(angle).coerceIn((-tileHeight / 2.0), (tileHeight / 2.0))
+        val dx = speed * sin(direction)
+        val dy = speed * cos(direction)
         return (if (abs(dx) < 0.1) 0.0 else dx) to (if (abs(dy) < 0.1) 0.0 else dy)
     }
 

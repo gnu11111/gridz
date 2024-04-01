@@ -1,6 +1,6 @@
 package at.gnu.gridz.levels
 
-class EmptyLevel : GridzLevel() {
+class EmptyLevel : TestLevel() {
 
     override val layout = """
         *                  *
@@ -25,6 +25,5 @@ class EmptyLevel : GridzLevel() {
         *                  *
     """.trimIndent().split("\n")
 
-    override val number = 3
     override val title = "NOTHING"
 }

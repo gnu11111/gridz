@@ -21,7 +21,7 @@ class KorgeRenderer {
             virtualSize = Size(WIDTH + scoreWidth, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { GameScene(gridzGame, scoreWidth) }
+            sceneContainer().changeTo { KorgeScene(gridzGame, scoreWidth) }
             addUpdater {
                 if (keys[Key.ESCAPE]) views.gameWindow.close(0)
             }

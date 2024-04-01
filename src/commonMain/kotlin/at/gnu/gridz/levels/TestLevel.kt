@@ -2,7 +2,7 @@ package at.gnu.gridz.levels
 
 import korlibs.io.lang.indexOfOrNull
 
-open class GridzLevel {
+open class TestLevel {
 
     open val layout = """
         ************ *******
@@ -27,7 +27,6 @@ open class GridzLevel {
         ************ *******
     """.trimIndent().split("\n")
 
-    open val number = 1
     open val title = "Test"
 
     open val rows: Int get() = layout.size

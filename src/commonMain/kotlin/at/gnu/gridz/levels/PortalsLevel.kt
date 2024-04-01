@@ -1,6 +1,6 @@
 package at.gnu.gridz.levels
 
-class PortalsLevel : GridzLevel() {
+class PortalsLevel : TestLevel() {
 
     override val layout = """
         *3****************1*
@@ -25,6 +25,5 @@ class PortalsLevel : GridzLevel() {
         *1****************0*
     """.trimIndent().split("\n")
 
-    override val number = 4
     override val title = "Portals"
 }

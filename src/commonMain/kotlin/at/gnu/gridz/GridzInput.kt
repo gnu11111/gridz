@@ -1,12 +1,12 @@
 package at.gnu.gridz
 
-import at.gnu.gridz.levels.GridzLevel
+import at.gnu.gridz.levels.TestLevel
 
 interface GridzInput {
 
     fun reset()
     fun pause(): GridzGame.State
-    fun next(): GridzLevel
-    fun previous(): GridzLevel
-    fun tick(inputX: Double, inputY: Double, dt: Float): List<GridzEvent>
+    fun next(): TestLevel
+    fun previous(): TestLevel
+    fun tick(inputX: Double, inputY: Double): List<GridzEvent>
 }

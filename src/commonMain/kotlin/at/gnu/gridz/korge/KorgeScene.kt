@@ -10,6 +10,7 @@ import korlibs.event.MouseButton
 import korlibs.image.color.Colors
 import korlibs.korge.input.gamepad
 import korlibs.korge.input.keys
+import korlibs.korge.input.singleTouch
 import korlibs.korge.scene.AlphaTransition
 import korlibs.korge.scene.PixelatedScene
 import korlibs.korge.view.*
@@ -26,7 +27,7 @@ import kotlin.math.sin
 
 //class GameScene(private val game: GridzGame, private val scoreWidth: Int)
 //    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
-class GameScene(private val game: GridzGame, private val scoreWidth: Int)
+class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
 
     private var timerText: Text = Text("")
@@ -100,7 +101,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
                     position(12, 64)
                 }
 
-                text("Level ${game.level.number}", 16, Colors.WHITESMOKE, defaultFont) {
+                text("Level ${game.levelNumber}", 16, Colors.WHITESMOKE, defaultFont) {
                     position(35, 110)
                 }
                 text(game.level.title, 16, Colors.WHITESMOKE, defaultFont) {
@@ -173,10 +174,14 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
             }
         }
 
+        singleTouch {
+            tap { pauseScene() }
+        }
+
         addUpdater(referenceFps = 60.fps) { dt ->
             val (dx, dy) = movementInput()
             if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
-                val events = game.tick(dx, dy, dt)
+                val events = game.tick(dx, dy)
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x, game.y)
                 pointer.position(pointerPostitionFrom(player))
@@ -190,7 +195,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
         transition = true
         game.reset()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            GameScene(game, scoreWidth)
+            KorgeScene(game, scoreWidth)
         }
     }
 
@@ -203,7 +208,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
         transition = true
         game.next()
         sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-            GameScene(game, scoreWidth)
+            KorgeScene(game, scoreWidth)
         }
     }
 
@@ -211,7 +216,7 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
         transition = true
         game.previous()
         sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-            GameScene(game, scoreWidth)
+            KorgeScene(game, scoreWidth)
         }
     }
 
@@ -240,9 +245,9 @@ class GameScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     private fun pointerPostitionFrom(player: Circle): Point {
-        val pointerRadius = game.distance * player.radius * 0.8
-        val pointerX = game.x + (pointerRadius * 0.6 * sin(game.angle))
-        val pointerY = game.y - (pointerRadius * 0.6 * cos(game.angle))
+        val pointerRadius = game.acceleration * player.radius * 0.8
+        val pointerX = game.x + (pointerRadius * 0.6 * sin(game.direction))
+        val pointerY = game.y - (pointerRadius * 0.6 * cos(game.direction))
         return Point(pointerX, pointerY)
     }
 
