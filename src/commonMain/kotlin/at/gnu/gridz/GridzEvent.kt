@@ -10,4 +10,6 @@ class TileEntered(val tile: GridzTile) : GridzEvent
 
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
 
-class Teleporting(val tile: GridzTile) : GridzEvent
+class StartTeleporting(val from: GridzTile, val to: GridzTile) : GridzEvent
+
+data object EndTeleporting : GridzEvent

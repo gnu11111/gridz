@@ -1,8 +1,8 @@
 
 Next steps:
 
-- portals
 - collect items (keys)
+- inventory
 - design first real level
 - display timer, score and infos
 - preserve high scores
@@ -11,7 +11,6 @@ Next steps:
 
 Ideas:
 
-- inventory
 - move blocks
 - destroy blocks
 - control drone to guide worker
@@ -24,6 +23,7 @@ Ideas:
 
 Done:
 
+- portals
 - use unix timestamp and subtract pause durations
 - tick() returns a list of events to the view
 - reset the current level and select a different level

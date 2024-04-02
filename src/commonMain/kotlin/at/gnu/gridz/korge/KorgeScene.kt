@@ -20,6 +20,7 @@ import korlibs.math.geom.RectCorners
 import korlibs.math.geom.Size
 import korlibs.math.isEven
 import korlibs.time.seconds
+import korlibs.time.timesPerSecond
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
@@ -37,6 +38,9 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private var dimmed = SolidRect(0, 0)
     private var transition = false
     private var allowGamepadInput = false
+    private var player = Circle()
+    private var from: GridzTile? = null
+    private var to: GridzTile? = null
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
@@ -49,12 +53,16 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
             container {
                 for (row in game.tiles) {
                     for (tile in row) {
+                        val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
                         when (tile) {
                             is Wall -> image(wall) {
                                 size(game.tileWidth, game.tileHeight)
                                 position((tile.x * game.tileWidth), (tile.y * game.tileHeight))
                             }
                             is Portal -> {
+                                tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
+                                    position(tile.x * game.tileWidth, tile.y * game.tileHeight)
+                                }
                                 circle(
                                     game.tileWidth / 4,
                                     teleportColors[tile.id % teleportColors.size],
@@ -70,12 +78,16 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                                 }
                             }
                             else -> {
-                                val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
                                 tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
                                     position(tile.x * game.tileWidth, tile.y * game.tileHeight)
                                 }
                             }
                         }
+                    }
+                }
+                game.items.forEach {
+                    solidRect(game.tileWidth / 2, game.tileHeight / 2, Colors.YELLOW) {
+                        position((it.x + 0.25) * game.tileWidth, (it.y + 0.25) * game.tileHeight)
                     }
                 }
                 fpsText = text("0", 14, Colors.YELLOW, digitalFont) {
@@ -141,7 +153,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     override suspend fun SContainer.sceneMain() {
-        val player = circle(
+        player = circle(
             radius = game.tileWidth / 2.4,
             fill = Colors.DARKRED,
             stroke = Colors.ORANGE,
@@ -175,18 +187,54 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         }
 
         singleTouch {
-            tap { pauseScene() }
+            tap { if (it.id == 1) pauseScene() }
         }
 
-        addUpdater(referenceFps = 60.fps) { dt ->
+//        addUpdater(referenceFps = 60.fps) {
+        addFixedUpdater(60.timesPerSecond) {
             val (dx, dy) = movementInput()
             if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
-                val events = game.tick(dx, dy)
+                game.tick(dx, dy).handleEvents()
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x, game.y)
                 pointer.position(pointerPostitionFrom(player))
-                updateTiles(events)
                 updateFps()
+            }
+        }
+    }
+
+    private fun List<GridzEvent>.handleEvents() {
+        forEach {
+            when (it) {
+                is TileEntered -> it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven)
+                    Colors["#143014"]
+                else
+                    Colors["#102810"]
+                is TileLitDeceased -> it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven)
+                    Colors["#1d1d1d"]
+                else
+                    Colors["#1a1a1a"]
+                is StartTeleporting -> {
+                    from = it.from
+                    to = it.to
+                    from?.component?.color = Colors["#305050"]
+                    to?.component?.color = Colors["#30a0a0"]
+                    player.blendMode = BlendMode.ERASE; player.stroke = Colors.WHITESMOKE
+                }
+                is EndTeleporting -> {
+                    from?.component?.color = if ((from!!.x + from!!.y).isEven)
+                        Colors["#1d1d1d"]
+                    else
+                        Colors["#1a1a1a"]
+                    to?.component?.color = if ((to!!.x + to!!.y).isEven)
+                        Colors["#1d1d1d"]
+                    else
+                        Colors["#1a1a1a"]
+                    player.blendMode = BlendMode.NORMAL
+                    player.stroke = Colors.ORANGE
+                }
+                is GameEnded -> println("Game ended!")
+                is NothingHappened -> { }
             }
         }
     }
@@ -249,15 +297,6 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         val pointerX = game.x + (pointerRadius * 0.6 * sin(game.direction))
         val pointerY = game.y - (pointerRadius * 0.6 * cos(game.direction))
         return Point(pointerX, pointerY)
-    }
-
-    private fun updateTiles(events: List<GridzEvent>) {
-        events.forEach {
-            if (it is TileEntered)
-                it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven) Colors["#143014"] else Colors["#102810"]
-            else if (it is TileLitDeceased)
-                it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
-        }
     }
 
     private fun mouseOrTouchOffsets(inputX: Double, inputY: Double): Pair<Double, Double> {

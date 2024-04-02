@@ -24,15 +24,15 @@ class Teleport(game: GridzGame, fromX: Int, fromY: Int, toX: Int, toY: Int) : Gr
         time += dt
         val x: Double
         val y: Double
-        if (time < 100L) {
-            x = startX + time * (fromX - startX) / 100.0
-            y = startY + time * (fromY - startY) / 100.0
+        if (time < 300L) {
+            x = startX + time * (fromX - startX) / 300.0
+            y = startY + time * (fromY - startY) / 300.0
             return Triple(State.RUNNING, x, y)
-        } else if (time < 300L) {
-            x = fromX + (time - 100L) * (toX - fromX) / 200.0
-            y = fromY + (time - 100L) * (toY - fromY) / 200.0
+        } else if (time < 600L) {
+            x = fromX + (time - 300L) * (toX - fromX) / 300.0
+            y = fromY + (time - 300L) * (toY - fromY) / 300.0
             return Triple(State.RUNNING, x, y)
-        } else if (time < 350L) {
+        } else if (time < 700L) {
             return Triple(State.RUNNING, toX, toY)
         }
         return Triple(State.FINISHED, toX, toY)
