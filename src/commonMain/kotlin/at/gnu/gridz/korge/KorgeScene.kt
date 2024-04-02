@@ -20,7 +20,6 @@ import korlibs.math.geom.RectCorners
 import korlibs.math.geom.Size
 import korlibs.math.isEven
 import korlibs.time.seconds
-import korlibs.time.timesPerSecond
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
@@ -190,8 +189,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
             tap { if (it.id == 1) pauseScene() }
         }
 
-//        addUpdater(referenceFps = 60.fps) {
-        addFixedUpdater(60.timesPerSecond) {
+        addUpdater(referenceFps = 60.fps) {
+//        addFixedUpdater(60.timesPerSecond) {
             val (dx, dy) = movementInput()
             if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
                 game.tick(dx, dy).handleEvents()
@@ -309,10 +308,10 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     private fun Long.toDigitalTime(): String {
-        val hundrets = (this % 1000L) / 10L
-        val seconds = (this % 60000L) / 1000L
         val minutes = (this % 3600000L) / 60000L
-        return if (minutes > 59) "59:59.99" else "${minutes.pad()}:${seconds.pad()}.${hundrets.pad()}"
+        val seconds = (this % 60000L) / 1000L
+        val hundreds = (this % 1000L) / 10L
+        return if (minutes > 59) "59:59.99" else "${minutes.pad()}:${seconds.pad()}.${hundreds.pad()}"
     }
 
     private fun Long.pad(): String =
