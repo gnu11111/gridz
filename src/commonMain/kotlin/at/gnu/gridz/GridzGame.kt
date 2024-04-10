@@ -13,9 +13,9 @@ class GridzGame : GridzInput {
 
     private val levels = listOf(TestLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
-    var direction = 0.0
+    var direction = 0.0f
         private set
-    var acceleration = 0.0
+    var acceleration = 0.0f
         private set
     var items: ArrayList<GridzItem> = arrayListOf()
         private set
@@ -25,21 +25,17 @@ class GridzGame : GridzInput {
         private set
     var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
         private set
-    var tileWidth = 0
-        private set
-    var tileHeight = 0
-        private set
     var timer = 0L
         private set
-    var x = 0.0
+    var x = 0.0f
         private set
-    var y = 0.0
+    var y = 0.0f
         private set
     var levelNumber = 0
         private set
 
     private var preferX = true
-    private var speed = 0.0
+    private var speed = 0.0f
     private var start = 0L
     private var startPause = 0L
     private var pauseTime = 0L
@@ -77,11 +73,11 @@ class GridzGame : GridzInput {
         return state
     }
 
-    override fun tick(inputX: Double, inputY: Double): List<GridzEvent> {
+    override fun tick(inputX: Float, inputY: Float): List<GridzEvent> {
         if (state == State.PAUSED)
             return listOf(NothingHappened)
         else if (state == State.LOADED) {
-            if ((inputX != 0.0) || (inputY != 0.0)) {
+            if ((inputX != 0.0f) || (inputY != 0.0f)) {
                 state = State.RUNNING
                 start = DateTime.nowUnixMillisLong()
             } else
@@ -107,8 +103,8 @@ class GridzGame : GridzInput {
             events += TileEntered(tile)
             when (tile) {
                 is Exit -> {
-                    x = (tile.x + 0.5) * tileWidth
-                    y = (tile.y + 0.5) * tileHeight
+                    x = tile.x + 0.5f
+                    y = tile.y + 0.5f
                     state = State.ENDED
                     return events + GameEnded
                 }
@@ -133,12 +129,10 @@ class GridzGame : GridzInput {
         this.levelNumber = levelNumber
         this.level = levels[levelNumber]
         pauseTime = 0L
-        tileWidth = WIDTH / level.cols
-        tileHeight = HEIGHT / level.rows
-        x = tileWidth * (level.startX + 0.5)
-        y = tileHeight * (level.startY + 0.5)
-        acceleration = 0.0
-        direction = 0.0
+        x = level.startX + 0.5f
+        y = level.startY + 0.5f
+        acceleration = 0.0f
+        direction = 0.0f
         timer = 0L
         tiles = arrayListOf()
         items = arrayListOf()
@@ -172,39 +166,39 @@ class GridzGame : GridzInput {
         return events
     }
 
-    private fun updateSpeed(inputX: Double, inputY: Double, dt: Long): Pair<Double, Double> {
-        acceleration = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0)
+    private fun updateSpeed(inputX: Float, inputY: Float, dt: Long): Pair<Float, Float> {
+        acceleration = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0f)
         direction = atan2(inputX, inputY)
-        val factor = dt * tileWidth / 500.0
-        speed = if (acceleration != 0.0)
-            (speed + (factor * acceleration)).coerceIn(0.0, factor * 5.0)
+        val factor = dt / 500.0f
+        speed = if (acceleration != 0.0f)
+            (speed + (factor * acceleration)).coerceIn(0.0f, factor * 5.0f)
         else
-            (speed - (factor * 1.0)).coerceAtLeast(0.0)
+            (speed - (factor * 1.0f)).coerceAtLeast(0.0f)
         val dx = speed * sin(direction)
         val dy = speed * cos(direction)
-        return (if (abs(dx) < 0.1) 0.0 else dx) to (if (abs(dy) < 0.1) 0.0 else dy)
+        return (if (abs(dx) < 0.004f) 0.0f else dx) to (if (abs(dy) < 0.004f) 0.0f else dy)
     }
 
-    private fun updatePosition(dx: Double, dy: Double): GridzTile? {
-        val thisX = x.toTileX()
-        val thisY = y.toTileY()
-        val snapX = (thisX + 0.5) * tileWidth
-        val snapY = (thisY + 0.5) * tileHeight
-        val nextXDouble = (((x + dx) / tileWidth) + 0.5 * sign(dx))
-        val nextX = if (nextXDouble >= 0.0) nextXDouble.toInt() else level.cols - 1
-        val nextYDouble = (((y - dy) / tileHeight) - 0.5 * sign(dy))
-        val nextY = if (nextYDouble >= 0.0) nextYDouble.toInt() else level.rows - 1
-        val offsetX = (x / tileWidth) - x.toTileX()
-        val offsetY = (y / tileHeight) - y.toTileY()
+    private fun updatePosition(dx: Float, dy: Float): GridzTile? {
+        val thisX = x.toInt()
+        val thisY = y.toInt()
+        val snapX = thisX + 0.5f
+        val snapY = thisY + 0.5f
+        val nextXFloat = x + dx + (0.5f * sign(dx))
+        val nextX = if (nextXFloat >= 0.0f) nextXFloat.toInt() else level.cols - 1
+        val nextYFloat = y - dy - (0.5f * sign(dy))
+        val nextY = if (nextYFloat >= 0.0f) nextYFloat.toInt() else level.rows - 1
+        val offsetX = x - x.toInt()
+        val offsetY = y - y.toInt()
         val speedX = speed * sign(dx)
         val speedY = speed * sign(dy)
 
         if ((nextX == thisX) && (nextY != thisY)) {
-            if (!isWall(thisX, nextY) && ((offsetX < 0.5) && (isWall(thisX - 1, nextY)))) {
-                if (abs(0.5 - offsetX) < 0.1) x = snapX else x += speedX + 1.0
+            if (!isWall(thisX, nextY) && ((offsetX < 0.5f) && (isWall(thisX - 1, nextY)))) {
+                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX + 0.04f
                 y = snapY
-            } else if (!isWall(thisX, nextY) && ((offsetX > 0.5) && (isWall(thisX + 1, nextY)))) {
-                if (abs(0.5 - offsetX) < 0.1) x = snapX else x += speedX - 1.0
+            } else if (!isWall(thisX, nextY) && ((offsetX > 0.5f) && (isWall(thisX + 1, nextY)))) {
+                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX - 0.04f
                 y = snapY
             } else if (isWall(thisX, nextY)) {
                 preferX = false
@@ -214,12 +208,12 @@ class GridzGame : GridzInput {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY == thisY)) {
-            if (!isWall(nextX, thisY) && ((offsetY > 0.5) && (isWall(nextX, thisY + 1)))) {
+            if (!isWall(nextX, thisY) && ((offsetY > 0.5f) && (isWall(nextX, thisY + 1)))) {
                 x = snapX
-                if (abs(0.5 - offsetY) < 0.1) y = snapY else y -= speedY + 1.0
-            } else if (!isWall(nextX, thisY) && ((offsetY < 0.5) && (isWall(nextX, thisY - 1)))) {
+                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY + 0.04f
+            } else if (!isWall(nextX, thisY) && ((offsetY < 0.5f) && (isWall(nextX, thisY - 1)))) {
                 x = snapX
-                if (abs(0.5 - offsetY) < 0.1) y = snapY else y -= speedY - 1.0
+                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY - 0.04f
             } else if (isWall(nextX, thisY)) {
                 preferX = true
                 y -= speedY
@@ -228,7 +222,7 @@ class GridzGame : GridzInput {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY != thisY)) {
-            preferX = if (abs(dx) > (2.0 * abs(dy))) true else if (abs(dy) > (2.0 * abs(dx))) false else preferX
+            preferX = if (abs(dx) > (2.0f * abs(dy))) true else if (abs(dy) > (2.0f * abs(dx))) false else preferX
             if (!isWall(nextX, nextY) && isWall(nextX, thisY) && isWall(thisX, nextY)) {
                 // do nothing
             } else if (isWall(nextX, nextY) && !isWall(nextX, thisY) && preferX) {
@@ -258,21 +252,15 @@ class GridzGame : GridzInput {
             y -= dy
         }
 
-        if (x > WIDTH) x -= WIDTH
-        if (x < 0) x += WIDTH
-        if (y > HEIGHT) y -= HEIGHT
-        if (y < 0) y += HEIGHT
+        if (x > level.cols) x -= level.cols
+        if (x < 0.0f) x += level.cols
+        if (y > level.rows) y -= level.rows
+        if (y < 0.0f) y += level.rows
 
-        val endX = x.toTileX()
-        val endY = y.toTileY()
+        val endX = x.toInt()
+        val endY = y.toInt()
         return if ((endX != thisX) || (endY != thisY)) tile(endX, endY) else null
     }
-
-    private fun Double.toTileX() =
-        ((this / tileWidth)).toInt()
-
-    private fun Double.toTileY() =
-        ((this / tileHeight)).toInt()
 
     private fun tile(x: Int, y: Int): GridzTile? =
         tiles.getOrNull((y + level.rows) % level.rows)?.getOrNull((x + level.cols) % level.cols)
@@ -283,7 +271,5 @@ class GridzGame : GridzInput {
 
     companion object {
         const val NAME = "gridZ"
-        const val WIDTH = 480
-        const val HEIGHT = 480
     }
 }

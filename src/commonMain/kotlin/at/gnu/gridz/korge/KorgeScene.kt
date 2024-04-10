@@ -1,8 +1,8 @@
 package at.gnu.gridz.korge
 
 import at.gnu.gridz.*
-import at.gnu.gridz.GridzGame.Companion.HEIGHT
-import at.gnu.gridz.GridzGame.Companion.WIDTH
+import at.gnu.gridz.korge.KorgeRenderer.Companion.HEIGHT
+import at.gnu.gridz.korge.KorgeRenderer.Companion.WIDTH
 import korlibs.event.GameButton
 import korlibs.event.GameStick
 import korlibs.event.Key
@@ -20,15 +20,16 @@ import korlibs.math.geom.RectCorners
 import korlibs.math.geom.Size
 import korlibs.math.isEven
 import korlibs.time.seconds
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.sin
+import kotlin.math.*
 
-//class GameScene(private val game: GridzGame, private val scoreWidth: Int)
-//    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
+////class GameScene(private val game: GridzGame, private val scoreWidth: Int)
+////    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
 class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
+
+    private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
+    private val tileWidth = WIDTH / game.level.cols
+    private val tileHeight = HEIGHT / game.level.rows
 
     private var timerText: Text = Text("")
     private var fpsText: Text = Text("")
@@ -38,9 +39,9 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private var transition = false
     private var allowGamepadInput = false
     private var player = Circle()
+    private var pointer = Circle()
     private var from: GridzTile? = null
     private var to: GridzTile? = null
-    private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
 
 
     override suspend fun SContainer.sceneInit() {
@@ -49,6 +50,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
         val wall = KorgeAssets.image(KorgeAssets.Images.WALL)
         val teleportColors = listOf(Colors.GREEN, Colors.RED, Colors.BLUE, Colors.ORANGE, Colors.WHITE)
+        val radius = min(tileWidth, tileHeight)
+
         container {
 
             container {
@@ -57,44 +60,55 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                         val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
                         when (tile) {
                             is Wall -> image(wall) {
-                                size(game.tileWidth, game.tileHeight)
-                                position((tile.x * game.tileWidth), (tile.y * game.tileHeight))
+                                size(tileWidth, tileHeight)
+                                position((tile.x * tileWidth), (tile.y * tileHeight))
                             }
                             is Portal -> {
-                                tileComponents[tile] = solidRect(game.tileWidth, game.tileHeight, color) {
-                                    position(tile.x * game.tileWidth, tile.y * game.tileHeight)
+                                tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
+                                    position(tile.x * tileWidth, tile.y * tileHeight)
                                 }
                                 circle(
-                                    game.tileWidth / 4,
+                                    radius / 4,
                                     teleportColors[tile.id % teleportColors.size],
                                     Colors.DARKORANGE,
                                     4
                                 ) {
-                                    position((tile.x + 0.25) * game.tileWidth, (tile.y + 0.25) * game.tileHeight)
+                                    position((tile.x + 0.5) * tileWidth, (tile.y + 0.5) * tileHeight)
+                                    anchor(0.4, 0.4)
                                 }
                             }
                             is Exit -> {
-                                solidRect(game.tileWidth / 2, game.tileHeight / 2, Colors.RED) {
-                                    position((tile.x + 0.25) * game.tileWidth, (tile.y + 0.25) * game.tileHeight)
+                                solidRect(tileWidth / 2, tileHeight / 2, Colors.RED) {
+                                    position((tile.x + 0.25) * tileWidth, (tile.y + 0.25) * tileHeight)
                                 }
                             }
                             else -> {
-                                tileComponents[tile] = solidRect(game.tileWidth, game.tileHeight, color) {
-                                    position(tile.x * game.tileWidth, tile.y * game.tileHeight)
+                                tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
+                                    position(tile.x * tileWidth, tile.y * tileHeight)
                                 }
                             }
                         }
                     }
                 }
                 game.items.forEach {
-                    solidRect(game.tileWidth / 2, game.tileHeight / 2, Colors.YELLOW) {
-                        position((it.x + 0.25) * game.tileWidth, (it.y + 0.25) * game.tileHeight)
+                    solidRect(tileWidth / 2, tileHeight / 2, Colors.YELLOW) {
+                        position((it.x + 0.25) * tileWidth, (it.y + 0.25) * tileHeight)
                     }
                 }
                 fpsText = text("0", 14, Colors.YELLOW, digitalFont) {
                     position(4, 4)
                 }
             }
+
+            player = circle(
+                radius = radius / 2.4,
+                fill = Colors.DARKRED,
+                stroke = Colors.ORANGE,
+                strokeThickness = radius * 0.2
+            ) {
+                anchor(0.4, 0.4)
+            }
+            pointer = circle(radius = radius / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
             container {
                 roundRect(Size(scoreWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
@@ -103,7 +117,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 }
 
                 text("grid", 48, Colors.ORANGE, titleFont) {
-//                setTextBounds(Rectangle(0, 0, scoreWidth, 48))
+////                setTextBounds(Rectangle(0, 0, scoreWidth, 48))
                     position(30, 10)
                 }
                 text("Z", 48, Colors.YELLOW, titleFont) {
@@ -154,15 +168,6 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     }
 
     override suspend fun SContainer.sceneMain() {
-        player = circle(
-            radius = game.tileWidth / 2.4,
-            fill = Colors.DARKRED,
-            stroke = Colors.ORANGE,
-            strokeThickness = game.tileWidth * 0.2
-        ) {
-            anchor(0.4, 0.4)
-        }
-        val pointer = circle(radius = game.tileWidth / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
         keys {
             down(Key.ENTER) { resetScene() }
@@ -192,12 +197,12 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         }
 
         addUpdater(referenceFps = 60.fps) {
-//        addFixedUpdater(60.timesPerSecond) {
+////        addFixedUpdater(60.timesPerSecond) {
             val (dx, dy) = movementInput()
             if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
-                game.tick(dx, dy).handleEvents()
+                game.tick(dx.toFloat(), dy.toFloat()).handleEvents()
                 timerText.text = game.timer.toDigitalTime()
-                player.position(game.x, game.y)
+                player.position(game.x * tileWidth, game.y * tileHeight)
                 pointer.position(pointerPostitionFrom(player))
                 updateFps()
             }
@@ -295,14 +300,14 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
 
     private fun pointerPostitionFrom(player: Circle): Point {
         val pointerRadius = game.acceleration * player.radius * 0.8
-        val pointerX = game.x + (pointerRadius * 0.6 * sin(game.direction))
-        val pointerY = game.y - (pointerRadius * 0.6 * cos(game.direction))
+        val pointerX = (game.x * tileWidth) + (pointerRadius * 0.6 * sin(game.direction))
+        val pointerY = (game.y * tileHeight) - (pointerRadius * 0.6 * cos(game.direction))
         return Point(pointerX, pointerY)
     }
 
     private fun mouseOrTouchOffsets(inputX: Double, inputY: Double): Pair<Double, Double> {
-        val deltaX = inputX - game.x
-        val deltaY = game.y - inputY
+        val deltaX = inputX - (game.x * tileWidth)
+        val deltaY = (game.y * tileHeight) - inputY
         return if ((abs(deltaX) + abs(deltaY)) > 10.0)
             (deltaX / max(abs(deltaX), abs(deltaY))) to (deltaY / max(abs(deltaX), abs(deltaY)))
         else

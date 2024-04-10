@@ -8,5 +8,5 @@ interface GridzInput {
     fun pause(): GridzGame.State
     fun next(): TestLevel
     fun previous(): TestLevel
-    fun tick(inputX: Double, inputY: Double): List<GridzEvent>
+    fun tick(inputX: Float, inputY: Float): List<GridzEvent>
 }

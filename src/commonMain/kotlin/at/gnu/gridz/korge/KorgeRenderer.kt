@@ -1,8 +1,6 @@
 package at.gnu.gridz.korge
 
 import at.gnu.gridz.GridzGame
-import at.gnu.gridz.GridzGame.Companion.HEIGHT
-import at.gnu.gridz.GridzGame.Companion.WIDTH
 import korlibs.event.Key
 import korlibs.image.color.Colors
 import korlibs.korge.Korge
@@ -30,5 +28,7 @@ class KorgeRenderer {
 
     companion object {
         const val BACKGROUND_COLOR = "#1a1a1a"
+        const val WIDTH = 480
+        const val HEIGHT = 480
     }
 }

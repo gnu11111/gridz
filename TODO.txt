@@ -1,7 +1,6 @@
 
 Next steps:
 
-- refactor GridzGame to only use "tile coordinates"
 - collect items (keys)
 - inventory
 - design the first real level
@@ -24,6 +23,7 @@ Ideas:
 
 Done:
 
+- decouple game from KorGE-renderer
 - decouple tiles from KorGE-renderer
 - portals
 - use unix timestamp and subtract pause durations
