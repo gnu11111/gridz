@@ -40,6 +40,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private var player = Circle()
     private var from: GridzTile? = null
     private var to: GridzTile? = null
+    private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
+
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
@@ -59,7 +61,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                                 position((tile.x * game.tileWidth), (tile.y * game.tileHeight))
                             }
                             is Portal -> {
-                                tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
+                                tileComponents[tile] = solidRect(game.tileWidth, game.tileHeight, color) {
                                     position(tile.x * game.tileWidth, tile.y * game.tileHeight)
                                 }
                                 circle(
@@ -77,7 +79,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                                 }
                             }
                             else -> {
-                                tile.component = solidRect(game.tileWidth, game.tileHeight, color) {
+                                tileComponents[tile] = solidRect(game.tileWidth, game.tileHeight, color) {
                                     position(tile.x * game.tileWidth, tile.y * game.tileHeight)
                                 }
                             }
@@ -205,27 +207,27 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private fun List<GridzEvent>.handleEvents() {
         forEach {
             when (it) {
-                is TileEntered -> it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven)
+                is TileEntered -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                     Colors["#143014"]
                 else
                     Colors["#102810"]
-                is TileLitDeceased -> it.tile.component?.color = if ((it.tile.x + it.tile.y).isEven)
+                is TileLitDeceased -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                     Colors["#1d1d1d"]
                 else
                     Colors["#1a1a1a"]
                 is StartTeleporting -> {
                     from = it.from
                     to = it.to
-                    from?.component?.color = Colors["#305050"]
-                    to?.component?.color = Colors["#30a0a0"]
+                    tileComponents[from]?.color = Colors["#305050"]
+                    tileComponents[to]?.color = Colors["#30a0a0"]
                     player.blendMode = BlendMode.ERASE; player.stroke = Colors.WHITESMOKE
                 }
                 is EndTeleporting -> {
-                    from?.component?.color = if ((from!!.x + from!!.y).isEven)
+                    tileComponents[from]?.color = if ((from!!.x + from!!.y).isEven)
                         Colors["#1d1d1d"]
                     else
                         Colors["#1a1a1a"]
-                    to?.component?.color = if ((to!!.x + to!!.y).isEven)
+                    tileComponents[to]?.color = if ((to!!.x + to!!.y).isEven)
                         Colors["#1d1d1d"]
                     else
                         Colors["#1a1a1a"]

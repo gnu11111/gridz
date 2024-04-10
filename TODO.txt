@@ -1,9 +1,10 @@
 
 Next steps:
 
+- refactor GridzGame to only use "tile coordinates"
 - collect items (keys)
 - inventory
-- design first real level
+- design the first real level
 - display timer, score and infos
 - preserve high scores
 - convert rendered graphics into images
@@ -23,6 +24,7 @@ Ideas:
 
 Done:
 
+- decouple tiles from KorGE-renderer
 - portals
 - use unix timestamp and subtract pause durations
 - tick() returns a list of events to the view

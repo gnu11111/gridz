@@ -1,10 +1,6 @@
 package at.gnu.gridz
 
-import korlibs.korge.view.SolidRect
-
-sealed class GridzTile(open val x: Int, open val y: Int) {
-    var component: SolidRect? = null
-}
+sealed class GridzTile(open val x: Int, open val y: Int)
 
 class Empty(override val x: Int, override val y: Int) : GridzTile(x, y) {
     var lit: Long = 0L
