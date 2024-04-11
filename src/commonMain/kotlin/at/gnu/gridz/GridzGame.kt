@@ -19,19 +19,21 @@ class GridzGame : GridzInput {
         private set
     var items: ArrayList<GridzItem> = arrayListOf()
         private set
+    var inventory: ArrayList<GridzItem> = arrayListOf()
+        private set
     var level = levels.first()
+        private set
+    var levelNumber = 0
         private set
     var state = State.UNKNOWN
         private set
-    var tiles: ArrayList<ArrayList<GridzTile>> = arrayListOf()
+    var tiles: ArrayList<GridzTile> = arrayListOf()
         private set
     var timer = 0L
         private set
     var x = 0.0f
         private set
     var y = 0.0f
-        private set
-    var levelNumber = 0
         private set
 
     private var preferX = true
@@ -86,41 +88,62 @@ class GridzGame : GridzInput {
         val lastTimer = timer
         timer = DateTime.nowUnixMillisLong() - start - pauseTime
         val dt = timer - lastTimer
+        handleAction(dt)?.let { return listOf(it) }
+        val (dx, dy) = updateSpeed(inputX, inputY, dt)
+        val tile = updatePosition(dx, dy)
+        return tile.handleItems() + tile.onEntered() + updateTiles(dt)
+    }
+
+    private fun handleAction(dt: Long): GridzEvent? {
         if (action is Teleport) {
             val (state, x, y) = action.perform(dt)
             this.x = x
             this.y = y
             if (state == GridzAction.State.FINISHED) {
                 action = NoAction
-                return listOf(EndTeleporting)
+                tiles.forEach { if (it is Exit) it.open = true }
+                return EndTeleporting
             }
-            return listOf(NothingHappened)
+            return NothingHappened
         }
-        val (dx, dy) = updateSpeed(inputX, inputY, dt)
-        val tile = updatePosition(dx, dy)
+        return null
+    }
+
+    private fun GridzTile?.handleItems(): MutableList<GridzEvent> {
         val events = mutableListOf<GridzEvent>()
-        if (tile != null) {
-            events += TileEntered(tile)
-            when (tile) {
-                is Exit -> {
-                    x = tile.x + 0.5f
-                    y = tile.y + 0.5f
-                    state = State.ENDED
-                    return events + GameEnded
-                }
-                is Empty -> tile.lit = Empty.LIT_TIME
-                is Portal -> {
-                    tiles.firstNotNullOfOrNull { row ->
-                        row.firstOrNull { (it !== tile) && (it is Portal) && (it.id == tile.id) }
-                    }?.let {
-                        action = Teleport(this, tile.x, tile.y, it.x, it.y)
-                        events += StartTeleporting(tile, it)
-                    }
-                }
-                is Wall -> reset()
+        if (this == null) return events
+        val item = item(this.x, this.y) ?: return events
+        items -= item
+        if (item.collectable && (inventory.size < level.maxInventory)) {
+            inventory += item
+            events += CollectedItem(item)
+        } else
+            events += ConsumedItem(item)
+        return events
+    }
+
+    private fun GridzTile?.onEntered(): MutableList<GridzEvent> {
+        if (this == null)
+            return mutableListOf()
+        val events = mutableListOf<GridzEvent>(TileEntered(this))
+        when (this) {
+            is Exit -> {
+                this@GridzGame.x = x + 0.5f
+                this@GridzGame.y = y + 0.5f
+                state = State.ENDED
+                events += GameEnded
             }
+            is Empty -> lit = Empty.LIT_TIME
+            is Portal -> {
+                tiles.firstOrNull {
+                    (it !== this) && (it is Portal) && (it.id == id)
+                }?.let {
+                    action = Teleport(this@GridzGame, x, y, it.x, it.y)
+                    events += StartTeleporting(this, it)
+                }
+            }
+            is Wall -> reset()
         }
-        events += updateTiles(dt)
         return events
     }
 
@@ -136,6 +159,7 @@ class GridzGame : GridzInput {
         timer = 0L
         tiles = arrayListOf()
         items = arrayListOf()
+        inventory = arrayListOf()
         for (y in 0 until level.rows) {
             val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {
@@ -146,8 +170,10 @@ class GridzGame : GridzInput {
                     c.isDigit() -> Portal(x, y, c.digitToInt())
                     else -> Empty(x, y)
                 }
-                if (c == 'k')
-                    items += Key(x, y)
+                when (c) {
+                    'k' -> items += Key(x, y)
+                    '.' -> items += Pill(x, y)
+                }
                 row += tile
             }
             tiles += row
@@ -157,12 +183,12 @@ class GridzGame : GridzInput {
 
     private fun updateTiles(dt: Long): List<GridzEvent> {
         val events = mutableListOf<GridzEvent>()
-        tiles.forEach { row -> row.forEach {
+        tiles.forEach {
             if ((it is Empty) && (it.lit > 0L)) {
                 it.lit = (it.lit - (dt * 10L)).coerceAtLeast(0L)
                 if (it.lit <= 0L) events += TileLitDeceased(it)
             }
-        } }
+        }
         return events
     }
 
@@ -263,10 +289,15 @@ class GridzGame : GridzInput {
     }
 
     private fun tile(x: Int, y: Int): GridzTile? =
-        tiles.getOrNull((y + level.rows) % level.rows)?.getOrNull((x + level.cols) % level.cols)
+        tiles.firstOrNull { (it.x == ((x + level.cols) % level.cols)) && (it.y == ((y + level.rows) % level.rows)) }
 
-    private fun isWall(x: Int, y: Int): Boolean =
-        tile(x, y) is Wall
+    private fun item(x: Int, y: Int): GridzItem? =
+        items.firstOrNull { (it.x == x) && (it.y == y) }
+
+    private fun isWall(x: Int, y: Int): Boolean {
+        val tile = tile(x, y)
+        return tile is Wall || ((tile is Exit) && !tile.open)
+    }
 
 
     companion object {

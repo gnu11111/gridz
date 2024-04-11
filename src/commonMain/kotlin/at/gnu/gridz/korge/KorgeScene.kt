@@ -28,9 +28,14 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
 
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
+    private val itemComponents = mutableMapOf<GridzItem, SolidRect>()
+    private val inventoryComponents = arrayListOf<RoundRect>()
+    private val exits = mutableSetOf<SolidRect>()
     private val tileWidth = WIDTH / game.level.cols
     private val tileHeight = HEIGHT / game.level.rows
 
+    private var grid = Container()
+    private var info = Container()
     private var timerText: Text = Text("")
     private var fpsText: Text = Text("")
     private var frames = 0
@@ -54,45 +59,49 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
 
         container {
 
-            container {
-                for (row in game.tiles) {
-                    for (tile in row) {
-                        val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
-                        when (tile) {
-                            is Wall -> image(wall) {
-                                size(tileWidth, tileHeight)
-                                position((tile.x * tileWidth), (tile.y * tileHeight))
+            grid = container {
+                game.tiles.forEach { tile ->
+                    val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
+                    when (tile) {
+                        is Wall -> image(wall) {
+                            size(tileWidth, tileHeight)
+                            position((tile.x * tileWidth), (tile.y * tileHeight))
+                        }
+                        is Portal -> {
+                            tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
+                                position(tile.x * tileWidth, tile.y * tileHeight)
                             }
-                            is Portal -> {
-                                tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
-                                    position(tile.x * tileWidth, tile.y * tileHeight)
-                                }
-                                circle(
-                                    radius / 4,
-                                    teleportColors[tile.id % teleportColors.size],
-                                    Colors.DARKORANGE,
-                                    4
-                                ) {
-                                    position((tile.x + 0.5) * tileWidth, (tile.y + 0.5) * tileHeight)
-                                    anchor(0.4, 0.4)
-                                }
+                            circle(
+                                radius / 4,
+                                teleportColors[tile.id % teleportColors.size],
+                                Colors.DARKORANGE,
+                                4
+                            ) {
+                                position((tile.x + 0.5) * tileWidth, (tile.y + 0.5) * tileHeight)
+                                anchor(0.4, 0.4)
                             }
-                            is Exit -> {
-                                solidRect(tileWidth / 2, tileHeight / 2, Colors.RED) {
-                                    position((tile.x + 0.25) * tileWidth, (tile.y + 0.25) * tileHeight)
-                                }
+                        }
+                        is Exit -> {
+                            exits += solidRect(tileWidth, tileHeight, Colors.RED) {
+                                position(tile.x * tileWidth, tile.y * tileHeight)
                             }
-                            else -> {
-                                tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
-                                    position(tile.x * tileWidth, tile.y * tileHeight)
-                                }
+                        }
+                        else -> {
+                            tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
+                                position(tile.x * tileWidth, tile.y * tileHeight)
                             }
                         }
                     }
                 }
-                game.items.forEach {
-                    solidRect(tileWidth / 2, tileHeight / 2, Colors.YELLOW) {
-                        position((it.x + 0.25) * tileWidth, (it.y + 0.25) * tileHeight)
+                game.items.forEach { item ->
+                    if (item is at.gnu.gridz.Key) {
+                        itemComponents[item] = solidRect(tileWidth / 2, tileHeight / 2, Colors.YELLOW) {
+                            position((item.x + 0.25) * tileWidth, (item.y + 0.25) * tileHeight)
+                        }
+                    } else {
+                        itemComponents[item] = solidRect(tileWidth / 2, tileHeight / 2, Colors.WHITESMOKE) {
+                            position((item.x + 0.25) * tileWidth, (item.y + 0.25) * tileHeight)
+                        }
                     }
                 }
                 fpsText = text("0", 14, Colors.YELLOW, digitalFont) {
@@ -110,7 +119,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
             }
             pointer = circle(radius = radius / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
-            container {
+            info = container {
                 roundRect(Size(scoreWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
                     6) {
                     position(3, 3)
@@ -141,8 +150,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                     position(30, 180)
                 }
 
-                for (i in 0..9) {
-                    roundRect(Size(24, 24), RectCorners(0), Colors["#402020"], Colors["#a08080"], 2) {
+                for (i in 0 until game.level.maxInventory) {
+                    inventoryComponents += roundRect(Size(24, 24), RectCorners(0), Colors["#402020"], Colors["#a08080"], 2) {
                         position(12 + (i % 5) * 28, 220 + (i / 5) * 28)
                     }
                 }
@@ -238,9 +247,24 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                         Colors["#1a1a1a"]
                     player.blendMode = BlendMode.NORMAL
                     player.stroke = Colors.ORANGE
+                    exits.forEach { exit -> exit.color = Colors.GREEN }
                 }
-                is GameEnded -> println("Game ended!")
+                is CollectedItem -> {
+                    for (i in game.inventory.indices) {
+                        val item = game.inventory[i]
+                        val component = itemComponents[item]
+                        if (component != null) {
+                            grid.removeChild(component)
+                            info.addChild(component)
+                            component.x = inventoryComponents[i].x + (tileWidth / 4)
+                            component.y = inventoryComponents[i].y + (tileHeight / 4)
+                            component.blendMode = if (item === it.item) BlendMode.NORMAL else BlendMode.INVERT
+                        }
+                    }
+                }
+                is ConsumedItem -> itemComponents[it.item]?.visible = false
                 is NothingHappened -> { }
+                is GameEnded -> println("Game ended!")
             }
         }
     }
