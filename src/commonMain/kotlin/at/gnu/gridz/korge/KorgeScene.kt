@@ -28,9 +28,10 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
 
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
-    private val itemComponents = mutableMapOf<GridzItem, SolidRect>()
+    private val itemComponents = mutableMapOf<GridzItem, Image>()
     private val inventoryComponents = arrayListOf<RoundRect>()
-    private val exits = mutableSetOf<SolidRect>()
+    private val openedExits = mutableSetOf<Image>()
+    private val closedExits = mutableSetOf<Image>()
     private val tileWidth = WIDTH / game.level.cols
     private val tileHeight = HEIGHT / game.level.rows
 
@@ -43,17 +44,22 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private var dimmed = SolidRect(0, 0)
     private var transition = false
     private var allowGamepadInput = false
-    private var player = Circle()
     private var pointer = Circle()
     private var from: GridzTile? = null
     private var to: GridzTile? = null
+    private lateinit var player: Image
 
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
         val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
         val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
-        val wall = KorgeAssets.image(KorgeAssets.Images.WALL)
+        val playerImage = KorgeAssets.image(KorgeAssets.Images.PLAYER)
+        val wallImage = KorgeAssets.image(KorgeAssets.Images.WALL)
+        val keyImage = KorgeAssets.image(KorgeAssets.Images.KEY)
+        val pillImage = KorgeAssets.image(KorgeAssets.Images.PILL)
+        val openedExitImage = KorgeAssets.image(KorgeAssets.Images.OPENED_EXIT)
+        val closedExitImage = KorgeAssets.image(KorgeAssets.Images.CLOSED_EXIT)
         val teleportColors = listOf(Colors.GREEN, Colors.RED, Colors.BLUE, Colors.ORANGE, Colors.WHITE)
         val radius = min(tileWidth, tileHeight)
 
@@ -63,7 +69,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 game.tiles.forEach { tile ->
                     val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
                     when (tile) {
-                        is Wall -> image(wall) {
+                        is Wall -> image(wallImage) {
                             size(tileWidth, tileHeight)
                             position((tile.x * tileWidth), (tile.y * tileHeight))
                         }
@@ -82,8 +88,12 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                             }
                         }
                         is Exit -> {
-                            exits += solidRect(tileWidth, tileHeight, Colors.RED) {
+                            closedExits += image(closedExitImage) {
                                 position(tile.x * tileWidth, tile.y * tileHeight)
+                            }
+                            openedExits += image(openedExitImage) {
+                                position(tile.x * tileWidth, tile.y * tileHeight)
+                                visible = false
                             }
                         }
                         else -> {
@@ -95,12 +105,14 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 }
                 game.items.forEach { item ->
                     if (item is at.gnu.gridz.Key) {
-                        itemComponents[item] = solidRect(tileWidth / 2, tileHeight / 2, Colors.YELLOW) {
-                            position((item.x + 0.25) * tileWidth, (item.y + 0.25) * tileHeight)
+                        itemComponents[item] = image(keyImage) {
+                            size(tileWidth, tileHeight)
+                            position((item.x * tileWidth), (item.y * tileHeight))
                         }
                     } else {
-                        itemComponents[item] = solidRect(tileWidth / 2, tileHeight / 2, Colors.WHITESMOKE) {
-                            position((item.x + 0.25) * tileWidth, (item.y + 0.25) * tileHeight)
+                        itemComponents[item] = image(pillImage) {
+                            size(tileWidth, tileHeight)
+                            position((item.x * tileWidth), (item.y * tileHeight))
                         }
                     }
                 }
@@ -109,13 +121,18 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 }
             }
 
-            player = circle(
-                radius = radius / 2.4,
-                fill = Colors.DARKRED,
-                stroke = Colors.ORANGE,
-                strokeThickness = radius * 0.2
-            ) {
-                anchor(0.4, 0.4)
+//            player = circle(
+//                radius = radius / 2.4,
+//                fill = Colors.DARKRED,
+//                stroke = Colors.ORANGE,
+//                strokeThickness = radius * 0.2
+//            ) {
+//                anchor(0.4, 0.4)
+//            }
+            player = image(playerImage) {
+                size(tileWidth, tileHeight)
+                position((game.x * tileWidth), (game.y * tileHeight))
+                anchor(0.5, 0.5)
             }
             pointer = circle(radius = radius / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
@@ -212,7 +229,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 game.tick(dx.toFloat(), dy.toFloat()).handleEvents()
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x * tileWidth, game.y * tileHeight)
-                pointer.position(pointerPostitionFrom(player))
+                pointer.position(calculatePointerPostition())
                 updateFps()
             }
         }
@@ -234,7 +251,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                     to = it.to
                     tileComponents[from]?.color = Colors["#305050"]
                     tileComponents[to]?.color = Colors["#30a0a0"]
-                    player.blendMode = BlendMode.ERASE; player.stroke = Colors.WHITESMOKE
+                    player.blendMode = BlendMode.ALPHA
                 }
                 is EndTeleporting -> {
                     tileComponents[from]?.color = if ((from!!.x + from!!.y).isEven)
@@ -246,8 +263,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                     else
                         Colors["#1a1a1a"]
                     player.blendMode = BlendMode.NORMAL
-                    player.stroke = Colors.ORANGE
-                    exits.forEach { exit -> exit.color = Colors.GREEN }
+                    openedExits.forEach { exit -> exit.visible = true }
+                    closedExits.forEach { exit -> exit.visible = false }
                 }
                 is CollectedItem -> {
                     for (i in game.inventory.indices) {
@@ -256,8 +273,8 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                         if (component != null) {
                             grid.removeChild(component)
                             info.addChild(component)
-                            component.x = inventoryComponents[i].x + (tileWidth / 4)
-                            component.y = inventoryComponents[i].y + (tileHeight / 4)
+                            component.x = inventoryComponents[i].x
+                            component.y = inventoryComponents[i].y
                             component.blendMode = if (item === it.item) BlendMode.NORMAL else BlendMode.INVERT
                         }
                     }
@@ -322,10 +339,9 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         return dx.coerceIn(-1.0, 1.0) to dy.coerceIn(-1.0, 1.0)
     }
 
-    private fun pointerPostitionFrom(player: Circle): Point {
-        val pointerRadius = game.acceleration * player.radius * 0.8
-        val pointerX = (game.x * tileWidth) + (pointerRadius * 0.6 * sin(game.direction))
-        val pointerY = (game.y * tileHeight) - (pointerRadius * 0.6 * cos(game.direction))
+    private fun calculatePointerPostition(): Point {
+        val pointerX = (game.x * tileWidth) + (0.25 * game.acceleration * tileWidth * sin(game.direction))
+        val pointerY = (game.y * tileHeight) - (0.25 * game.acceleration * tileHeight * cos(game.direction))
         return Point(pointerX, pointerY)
     }
 

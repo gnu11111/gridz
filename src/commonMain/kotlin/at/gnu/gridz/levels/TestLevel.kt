@@ -24,7 +24,7 @@ open class TestLevel {
         * * * * *      *   *
         * *   * ********** *
         *                  *
-        ************ *******
+        ********************
     """.trimIndent().split("\n")
 
     open val title = "Test"

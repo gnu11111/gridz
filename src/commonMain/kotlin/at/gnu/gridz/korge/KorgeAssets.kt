@@ -15,7 +15,12 @@ object KorgeAssets {
     }
 
     enum class Images(val filename: String) {
+        PLAYER("player.png"),
         WALL("wall.png"),
+        KEY("key.png"),
+        PILL("pill.png"),
+        CLOSED_EXIT("closedExit.png"),
+        OPENED_EXIT("openedExit.png"),
         DEFAULT("wall.png");
     }
 
@@ -34,7 +39,12 @@ object KorgeAssets {
             put(Fonts.DIGITAL, resourcesVfs["$FONTS_DIRECTORY/${Fonts.DIGITAL.filename}"].readFont())
         }
         images = buildMap {
+            put(Images.PLAYER, resourcesVfs["$IMAGES_DIRECTORY/${Images.PLAYER.filename}"].readBitmap())
             put(Images.WALL, resourcesVfs["$IMAGES_DIRECTORY/${Images.WALL.filename}"].readBitmap())
+            put(Images.KEY, resourcesVfs["$IMAGES_DIRECTORY/${Images.KEY.filename}"].readBitmap())
+            put(Images.PILL, resourcesVfs["$IMAGES_DIRECTORY/${Images.PILL.filename}"].readBitmap())
+            put(Images.CLOSED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.CLOSED_EXIT.filename}"].readBitmap())
+            put(Images.OPENED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.OPENED_EXIT.filename}"].readBitmap())
         }
     }
 

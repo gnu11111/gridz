@@ -1,9 +1,8 @@
 
 Next steps:
 
-- collect items (keys)
-- inventory
-- design the first real level
+- define requirements to finish a level
+- design a first real level
 - display timer, score and infos
 - preserve high scores
 - convert rendered graphics into images
@@ -23,6 +22,8 @@ Ideas:
 
 Done:
 
+- collect items (keys)
+- inventory
 - decouple game from KorGE-renderer
 - decouple tiles from KorGE-renderer
 - portals
