@@ -29,4 +29,5 @@ class PacmanLevel : TestLevel() {
 
     override val title = "Pacman!"
     override val startY = 16
+    override val tailLitTime = 0L
 }

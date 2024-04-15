@@ -11,7 +11,7 @@ class GridzGame : GridzInput {
 
     enum class State { INIT, LOADED, RUNNING, PAUSED, ENDED, UNKNOWN }
 
-    private val levels = listOf(TestLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
+    private val levels = listOf(PacmanLevel(), TestLevel(), EmptyLevel(), PortalsLevel())
 
     var direction = 0.0f
         private set
@@ -125,7 +125,7 @@ class GridzGame : GridzInput {
     private fun GridzTile?.onEntered(): MutableList<GridzEvent> {
         if (this == null)
             return mutableListOf()
-        val events = mutableListOf<GridzEvent>(TileEntered(this))
+        val events = mutableListOf<GridzEvent>()
         when (this) {
             is Exit -> {
                 this@GridzGame.x = x + 0.5f
@@ -133,16 +133,17 @@ class GridzGame : GridzInput {
                 state = State.ENDED
                 events += GameEnded
             }
-            is Empty -> lit = Empty.LIT_TIME
-            is Portal -> {
-                tiles.firstOrNull {
-                    (it !== this) && (it is Portal) && (it.id == id)
-                }?.let {
-                    action = Teleport(this@GridzGame, x, y, it.x, it.y)
-                    events += StartTeleporting(this, it)
-                }
+            is Empty -> if (level.tailLitTime > 0L) {
+                lit = level.tailLitTime
+                events += TileEntered(this)
             }
-            is Wall -> reset()
+            is Portal -> tiles.firstOrNull {
+                (it !== this) && (it is Portal) && (it.id == id)
+            }?.let {
+                action = Teleport(this@GridzGame, x, y, it.x, it.y)
+                events += StartTeleporting(this, it)
+            }
+            is Wall -> events += GameReset
         }
         return events
     }

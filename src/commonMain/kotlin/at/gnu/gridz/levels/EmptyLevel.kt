@@ -3,7 +3,7 @@ package at.gnu.gridz.levels
 class EmptyLevel : TestLevel() {
 
     override val layout = """
-        *                  *
+        2                  1
 
 
 
@@ -13,6 +13,7 @@ class EmptyLevel : TestLevel() {
 
 
 
+                  x
 
 
 
@@ -21,8 +22,7 @@ class EmptyLevel : TestLevel() {
 
 
 
-
-        *                  *
+        1                  2
     """.trimIndent().split("\n")
 
     override val title = "NOTHING"

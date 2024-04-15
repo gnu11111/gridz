@@ -3,10 +3,8 @@ package at.gnu.gridz.korge
 import at.gnu.gridz.*
 import at.gnu.gridz.korge.KorgeRenderer.Companion.HEIGHT
 import at.gnu.gridz.korge.KorgeRenderer.Companion.WIDTH
-import korlibs.event.GameButton
-import korlibs.event.GameStick
+import korlibs.event.*
 import korlibs.event.Key
-import korlibs.event.MouseButton
 import korlibs.image.color.Colors
 import korlibs.korge.input.gamepad
 import korlibs.korge.input.keys
@@ -22,10 +20,10 @@ import korlibs.math.isEven
 import korlibs.time.seconds
 import kotlin.math.*
 
-////class GameScene(private val game: GridzGame, private val scoreWidth: Int)
-////    : ScaledScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
-class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
-    : PixelatedScene(WIDTH + scoreWidth, HEIGHT, sceneSmoothing = false) {
+////class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
+////    : ScaledScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
+class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
+    : PixelatedScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
 
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
     private val itemComponents = mutableMapOf<GridzItem, Image>()
@@ -137,13 +135,13 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
             pointer = circle(radius = radius / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
             info = container {
-                roundRect(Size(scoreWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
+                roundRect(Size(infoWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
                     6) {
                     position(3, 3)
                 }
 
                 text("grid", 48, Colors.ORANGE, titleFont) {
-////                setTextBounds(Rectangle(0, 0, scoreWidth, 48))
+////                setTextBounds(Rectangle(0, 0, infoWidth, 48))
                     position(30, 10)
                 }
                 text("Z", 48, Colors.YELLOW, titleFont) {
@@ -186,7 +184,7 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 alignRightToRightOf(this@sceneInit)
             }
 
-            dimmed = solidRect(WIDTH + scoreWidth, HEIGHT) {
+            dimmed = solidRect(WIDTH + infoWidth, HEIGHT) {
                 colorMul = Colors["#00000040"]
                 visible = false
             }
@@ -219,7 +217,14 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
         }
 
         singleTouch {
-            tap { if (it.id == 1) pauseScene() }
+            tap {
+                if (it.id == 0) {
+                    when (game.state) {
+                        GridzGame.State.ENDED -> dispatchKeyEvent(Key.N)
+                        else -> pauseScene()
+                    }
+                }
+            }
         }
 
         addUpdater(referenceFps = 60.fps) {
@@ -281,16 +286,21 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
                 }
                 is ConsumedItem -> itemComponents[it.item]?.visible = false
                 is NothingHappened -> { }
-                is GameEnded -> println("Game ended!")
+                is GameEnded -> { }
+                is GameReset -> dispatchKeyEvent(Key.ENTER)
             }
         }
+    }
+
+    private fun dispatchKeyEvent(key: Key) {
+        this@KorgeScene.gameWindow.dispatchDown(KeyEvent(type = KeyEvent.Type.DOWN, key = key))
     }
 
     private suspend fun resetScene() {
         transition = true
         game.reset()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, scoreWidth)
+            KorgeScene(game, infoWidth)
         }
     }
 
@@ -302,16 +312,16 @@ class KorgeScene(private val game: GridzGame, private val scoreWidth: Int)
     private suspend fun nextScene() {
         transition = true
         game.next()
-        sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-            KorgeScene(game, scoreWidth)
+        sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
+            KorgeScene(game, infoWidth)
         }
     }
 
     private suspend fun previousScene() {
         transition = true
         game.previous()
-        sceneContainer.changeTo(time = 1.0.seconds, transition = AlphaTransition) {
-            KorgeScene(game, scoreWidth)
+        sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
+            KorgeScene(game, infoWidth)
         }
     }
 

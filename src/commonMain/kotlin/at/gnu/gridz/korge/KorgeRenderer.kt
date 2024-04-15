@@ -11,15 +11,15 @@ import korlibs.math.geom.Size
 class KorgeRenderer {
 
     suspend fun init(gridzGame: GridzGame) {
-        val scoreWidth = WIDTH / 3
+        val infoWidth = WIDTH / 3
         KorgeAssets.load()
         Korge(
             title = GridzGame.NAME,
-            windowSize = Size(WIDTH + scoreWidth, HEIGHT),
-            virtualSize = Size(WIDTH + scoreWidth, HEIGHT),
+            windowSize = Size(WIDTH + infoWidth, HEIGHT),
+            virtualSize = Size(WIDTH + infoWidth, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { KorgeScene(gridzGame, scoreWidth) }
+            sceneContainer().changeTo { KorgeScene(gridzGame, infoWidth) }
             addUpdater {
                 if (keys[Key.ESCAPE]) views.gameWindow.close(0)
             }

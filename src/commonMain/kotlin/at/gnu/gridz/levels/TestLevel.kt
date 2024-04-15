@@ -29,6 +29,7 @@ open class TestLevel {
 
     open val title = "Test"
     open val maxInventory = 10
+    open val tailLitTime = 50000L
 
     open val rows: Int get() = layout.size
     open val cols: Int get() = layout.maxOf { it.length }

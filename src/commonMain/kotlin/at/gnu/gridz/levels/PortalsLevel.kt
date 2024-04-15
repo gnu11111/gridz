@@ -26,4 +26,5 @@ class PortalsLevel : TestLevel() {
     """.trimIndent().split("\n")
 
     override val title = "Portals"
+    override val tailLitTime = 0L
 }

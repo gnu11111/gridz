@@ -4,10 +4,6 @@ sealed class GridzTile(open val x: Int, open val y: Int)
 
 class Empty(override val x: Int, override val y: Int) : GridzTile(x, y) {
     var lit = 0L
-
-    companion object {
-        const val LIT_TIME = 50000L
-    }
 }
 
 class Wall(override val x: Int, override val y: Int) : GridzTile(x, y)

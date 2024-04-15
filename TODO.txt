@@ -22,6 +22,7 @@ Ideas:
 
 Done:
 
+- make the length of the 'tail' part of the level configuration
 - collect items (keys)
 - inventory
 - decouple game from KorGE-renderer

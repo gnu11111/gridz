@@ -6,6 +6,8 @@ data object NothingHappened : GridzEvent
 
 data object GameEnded : GridzEvent
 
+data object GameReset : GridzEvent
+
 class TileEntered(val tile: GridzTile) : GridzEvent
 
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
