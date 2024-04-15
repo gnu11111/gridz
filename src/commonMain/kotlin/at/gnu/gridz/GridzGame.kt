@@ -4,6 +4,7 @@ import at.gnu.gridz.levels.EmptyLevel
 import at.gnu.gridz.levels.TestLevel
 import at.gnu.gridz.levels.PacmanLevel
 import at.gnu.gridz.levels.PortalsLevel
+import korlibs.logger.Console
 import korlibs.time.DateTime
 import kotlin.math.*
 
@@ -11,7 +12,7 @@ class GridzGame : GridzInput {
 
     enum class State { INIT, LOADED, RUNNING, PAUSED, ENDED, UNKNOWN }
 
-    private val levels = listOf(PacmanLevel(), TestLevel(), EmptyLevel(), PortalsLevel())
+    private val levels = listOf(TestLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
     var direction = 0.0f
         private set
@@ -26,6 +27,8 @@ class GridzGame : GridzInput {
     var levelNumber = 0
         private set
     var state = State.UNKNOWN
+        private set
+    var requirements: MutableMap<String, Int> = mutableMapOf()
         private set
     var tiles: ArrayList<GridzTile> = arrayListOf()
         private set
@@ -88,7 +91,18 @@ class GridzGame : GridzInput {
         val lastTimer = timer
         timer = DateTime.nowUnixMillisLong() - start - pauseTime
         val dt = timer - lastTimer
-        handleAction(dt)?.let { return listOf(it) }
+        handleAction(dt)?.let { event ->
+            if (event is TeleportEnded) {
+                if (requirements.contains(Teleport.NAME)) {
+                    requirements[Teleport.NAME] = requirements[Teleport.NAME]!!.minus(1).coerceAtLeast(0)
+                    if (requirements.all { it.value <= 0 }) {
+                        tiles.forEach { if (it is Exit) it.open = true }
+                        return listOf(event, ExitOpened)
+                    }
+                }
+            }
+            return listOf(event)
+        }
         val (dx, dy) = updateSpeed(inputX, inputY, dt)
         val tile = updatePosition(dx, dy)
         return tile.handleItems() + tile.onEntered() + updateTiles(dt)
@@ -101,8 +115,7 @@ class GridzGame : GridzInput {
             this.y = y
             if (state == GridzAction.State.FINISHED) {
                 action = NoAction
-                tiles.forEach { if (it is Exit) it.open = true }
-                return EndTeleporting
+                return TeleportEnded
             }
             return NothingHappened
         }
@@ -114,11 +127,18 @@ class GridzGame : GridzInput {
         if (this == null) return events
         val item = item(this.x, this.y) ?: return events
         items -= item
+        if (requirements.contains(item.name)) {
+            requirements[item.name] = requirements[item.name]!!.minus(1).coerceAtLeast(0)
+            if (requirements.all { it.value <= 0 }) {
+                tiles.forEach { if (it is Exit) it.open = true }
+                events += ExitOpened
+            }
+        }
         if (item.collectable && (inventory.size < level.maxInventory)) {
             inventory += item
-            events += CollectedItem(item)
+            events += ItemCollected(item)
         } else
-            events += ConsumedItem(item)
+            events += ItemConsumed(item)
         return events
     }
 
@@ -134,16 +154,23 @@ class GridzGame : GridzInput {
                 events += GameEnded
             }
             is Empty -> if (level.tailLitTime > 0L) {
+                if (lit <= 0L) {
+                    requirements[Empty.NAME] = requirements[Empty.NAME]?.minus(1)?.coerceAtLeast(0) ?: 0
+                    if (requirements.all { it.value <= 0 }) {
+                        tiles.forEach { if (it is Exit) it.open = true }
+                        events += ExitOpened
+                    }
+                }
                 lit = level.tailLitTime
-                events += TileEntered(this)
+                events += TileLit(this)
             }
             is Portal -> tiles.firstOrNull {
                 (it !== this) && (it is Portal) && (it.id == id)
             }?.let {
                 action = Teleport(this@GridzGame, x, y, it.x, it.y)
-                events += StartTeleporting(this, it)
+                events += TeleportStarted(this, it)
             }
-            is Wall -> events += GameReset
+            is Wall -> events += GameReset.also { Console.error("Stuck in wall!") }
         }
         return events
     }
@@ -161,6 +188,7 @@ class GridzGame : GridzInput {
         tiles = arrayListOf()
         items = arrayListOf()
         inventory = arrayListOf()
+        requirements = level.requirements.toMutableMap()
         for (y in 0 until level.rows) {
             val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {

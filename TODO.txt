@@ -1,7 +1,6 @@
 
 Next steps:
 
-- define requirements to finish a level
 - design a first real level
 - display timer, score and infos
 - preserve high scores
@@ -22,6 +21,7 @@ Ideas:
 
 Done:
 
+- fulfill requirements to finish a level
 - make the length of the 'tail' part of the level configuration
 - collect items (keys)
 - inventory

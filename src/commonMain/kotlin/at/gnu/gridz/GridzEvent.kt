@@ -8,14 +8,16 @@ data object GameEnded : GridzEvent
 
 data object GameReset : GridzEvent
 
-class TileEntered(val tile: GridzTile) : GridzEvent
+class TileLit(val tile: GridzTile) : GridzEvent
 
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
 
-class StartTeleporting(val from: GridzTile, val to: GridzTile) : GridzEvent
+class TeleportStarted(val from: GridzTile, val to: GridzTile) : GridzEvent
 
-class CollectedItem(val item: GridzItem) : GridzEvent
+class ItemCollected(val item: GridzItem) : GridzEvent
 
-class ConsumedItem(val item: GridzItem) : GridzEvent
+class ItemConsumed(val item: GridzItem) : GridzEvent
 
-data object EndTeleporting : GridzEvent
+data object ExitOpened : GridzEvent
+
+data object TeleportEnded : GridzEvent

@@ -28,6 +28,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
     private val itemComponents = mutableMapOf<GridzItem, Image>()
     private val inventoryComponents = arrayListOf<RoundRect>()
+    private val requirementComponents = mutableMapOf<String, Text>()
     private val openedExits = mutableSetOf<Image>()
     private val closedExits = mutableSetOf<Image>()
     private val tileWidth = WIDTH / game.level.cols
@@ -87,15 +88,18 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                         }
                         is Exit -> {
                             closedExits += image(closedExitImage) {
+                                size(tileWidth, tileHeight)
                                 position(tile.x * tileWidth, tile.y * tileHeight)
                             }
                             openedExits += image(openedExitImage) {
+                                size(tileWidth, tileHeight)
                                 position(tile.x * tileWidth, tile.y * tileHeight)
                                 visible = false
                             }
                         }
                         else -> {
                             tileComponents[tile] = solidRect(tileWidth, tileHeight, color) {
+                                size(tileWidth, tileHeight)
                                 position(tile.x * tileWidth, tile.y * tileHeight)
                             }
                         }
@@ -171,14 +175,10 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     }
                 }
 
-                text("Collect 3 Keys", 12, Colors.WHITESMOKE, defaultFont) {
-                    position(10, 290)
-                }
-                text("Port 4 Times", 12, Colors.WHITESMOKE, defaultFont) {
-                    position(10, 310)
-                }
-                text("Color 50 Tiles", 12, Colors.WHITESMOKE, defaultFont) {
-                    position(10, 330)
+                game.requirements.entries.forEachIndexed { y, (name, amount) ->
+                    requirementComponents[name] = text(name.toText(amount), 12, Colors.WHITESMOKE, defaultFont) {
+                        position(10, 290 + (y * 20))
+                    }
                 }
 
                 alignRightToRightOf(this@sceneInit)
@@ -243,22 +243,25 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     private fun List<GridzEvent>.handleEvents() {
         forEach {
             when (it) {
-                is TileEntered -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
-                    Colors["#143014"]
-                else
-                    Colors["#102810"]
+                is TileLit -> {
+                    tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
+                        Colors["#143014"]
+                    else
+                        Colors["#102810"]
+                    requirementComponents[Empty.NAME]?.text = Empty.NAME.toText(game.requirements[Empty.NAME] ?: 0)
+                }
                 is TileLitDeceased -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                     Colors["#1d1d1d"]
                 else
                     Colors["#1a1a1a"]
-                is StartTeleporting -> {
+                is TeleportStarted -> {
                     from = it.from
                     to = it.to
                     tileComponents[from]?.color = Colors["#305050"]
                     tileComponents[to]?.color = Colors["#30a0a0"]
                     player.blendMode = BlendMode.ALPHA
                 }
-                is EndTeleporting -> {
+                is TeleportEnded -> {
                     tileComponents[from]?.color = if ((from!!.x + from!!.y).isEven)
                         Colors["#1d1d1d"]
                     else
@@ -268,10 +271,10 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     else
                         Colors["#1a1a1a"]
                     player.blendMode = BlendMode.NORMAL
-                    openedExits.forEach { exit -> exit.visible = true }
-                    closedExits.forEach { exit -> exit.visible = false }
+                    requirementComponents[Teleport.NAME]?.text =
+                        Teleport.NAME.toText(game.requirements[Teleport.NAME] ?: 0)
                 }
-                is CollectedItem -> {
+                is ItemCollected -> {
                     for (i in game.inventory.indices) {
                         val item = game.inventory[i]
                         val component = itemComponents[item]
@@ -283,8 +286,18 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                             component.blendMode = if (item === it.item) BlendMode.NORMAL else BlendMode.INVERT
                         }
                     }
+                    requirementComponents[it.item.name]?.text =
+                        it.item.name.toText(game.requirements[it.item.name] ?: 0)
                 }
-                is ConsumedItem -> itemComponents[it.item]?.visible = false
+                is ItemConsumed -> {
+                    itemComponents[it.item]?.visible = false
+                    requirementComponents[it.item.name]?.text =
+                        it.item.name.toText(game.requirements[it.item.name] ?: 0)
+                }
+                is ExitOpened -> {
+                    openedExits.forEach { exit -> exit.visible = true }
+                    closedExits.forEach { exit -> exit.visible = false }
+                }
                 is NothingHappened -> { }
                 is GameEnded -> { }
                 is GameReset -> dispatchKeyEvent(Key.ENTER)
@@ -373,4 +386,12 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
 
     private fun Long.pad(): String =
         if (this < 10L) "0$this" else "$this"
+
+    private fun String.toText(amount: Int): String =
+        when (this) {
+            at.gnu.gridz.Key.NAME -> "Collect $amount Keys"
+            Pill.NAME -> "Eat $amount Pills"
+            Teleport.NAME -> "Port $amount Times"
+            else -> "Color $amount Tiles"
+        }
 }

@@ -37,4 +37,8 @@ class Teleport(game: GridzGame, fromX: Int, fromY: Int, toX: Int, toY: Int) : Gr
         }
         return Triple(State.FINISHED, toX, toY)
     }
+
+    companion object {
+        const val NAME = "Teleport"
+    }
 }
