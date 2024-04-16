@@ -44,6 +44,7 @@ class GridzGame : GridzInput {
     private var start = 0L
     private var startPause = 0L
     private var pauseTime = 0L
+    private var lastMoved = 0L
     private var action: GridzAction = NoAction
 
 
@@ -91,6 +92,13 @@ class GridzGame : GridzInput {
         val lastTimer = timer
         timer = DateTime.nowUnixMillisLong() - start - pauseTime
         val dt = timer - lastTimer
+        if ((inputX != 0.0f) && (inputY != 0.0f))
+            lastMoved = 0L
+        else {
+            lastMoved += dt
+            if (lastMoved > NOT_MOVED_TIMEOUT)
+                return listOf(GameReset)
+        }
         handleAction(dt)?.let { event ->
             if (event is TeleportEnded) {
                 if (requirements.contains(Teleport.NAME)) {
@@ -180,6 +188,7 @@ class GridzGame : GridzInput {
         this.levelNumber = levelNumber
         this.level = levels[levelNumber]
         pauseTime = 0L
+        lastMoved = 0L
         x = level.startX + 0.5f
         y = level.startY + 0.5f
         acceleration = 0.0f
@@ -331,5 +340,6 @@ class GridzGame : GridzInput {
 
     companion object {
         const val NAME = "gridZ"
+        const val NOT_MOVED_TIMEOUT = 60000L
     }
 }

@@ -23,6 +23,7 @@ Ideas:
 
 Done:
 
+- timeout when not moving
 - buttons for reset, pause, next, previous
 - display timer, score and infos
 - fulfill requirements to finish a level
