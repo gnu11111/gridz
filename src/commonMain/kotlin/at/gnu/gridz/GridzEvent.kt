@@ -18,6 +18,8 @@ class ItemCollected(val item: GridzItem) : GridzEvent
 
 class ItemConsumed(val item: GridzItem) : GridzEvent
 
+class ExitEntered(val exit: GridzTile) : GridzEvent
+
 data object ExitOpened : GridzEvent
 
 data object TeleportEnded : GridzEvent

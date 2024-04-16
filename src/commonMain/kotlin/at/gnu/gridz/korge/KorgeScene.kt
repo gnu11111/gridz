@@ -30,9 +30,9 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
     private val itemComponents = mutableMapOf<GridzItem, Image>()
     private val inventoryComponents = arrayListOf<RoundRect>()
-    private val requirementComponents = mutableMapOf<String, Text>()
-    private val openedExits = mutableSetOf<Image>()
-    private val closedExits = mutableSetOf<Image>()
+    private val taskComponents = mutableMapOf<String, Text>()
+    private val openedExits = mutableMapOf<GridzTile, Image>()
+    private val closedExits = mutableMapOf<GridzTile, Image>()
     private val tileWidth = WIDTH / game.level.cols
     private val tileHeight = HEIGHT / game.level.rows
 
@@ -94,11 +94,11 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                             }
                         }
                         is Exit -> {
-                            closedExits += image(closedExitImage) {
+                            closedExits[tile] = image(closedExitImage) {
                                 size(tileWidth, tileHeight)
                                 position(tile.x * tileWidth, tile.y * tileHeight)
                             }
-                            openedExits += image(openedExitImage) {
+                            openedExits[tile] = image(openedExitImage) {
                                 size(tileWidth, tileHeight)
                                 position(tile.x * tileWidth, tile.y * tileHeight)
                                 visible = false
@@ -182,8 +182,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     }
                 }
 
-                game.requirements.entries.forEachIndexed { y, (name, amount) ->
-                    requirementComponents[name] = text(name.toText(amount), 12, Colors.WHITESMOKE, defaultFont) {
+                game.tasks.entries.forEachIndexed { y, (name, amount) ->
+                    taskComponents[name] = text(name.toText(amount), 12, Colors.WHITESMOKE, defaultFont) {
                         position(10, 290 + (y * 20))
                     }
                 }
@@ -273,7 +273,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                         Colors["#143014"]
                     else
                         Colors["#102810"]
-                    requirementComponents[Empty.NAME]?.text = Empty.NAME.toText(game.requirements[Empty.NAME] ?: 0)
+                    taskComponents[Empty.NAME]?.text = Empty.NAME.toText(game.tasks[Empty.NAME] ?: 0)
                 }
                 is TileLitDeceased -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                     Colors["#1d1d1d"]
@@ -296,8 +296,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     else
                         Colors["#1a1a1a"]
                     player.blendMode = BlendMode.NORMAL
-                    requirementComponents[Teleport.NAME]?.text =
-                        Teleport.NAME.toText(game.requirements[Teleport.NAME] ?: 0)
+                    taskComponents[Teleport.NAME]?.text = Teleport.NAME.toText(game.tasks[Teleport.NAME] ?: 0)
                 }
                 is ItemCollected -> {
                     for (i in game.inventory.indices) {
@@ -311,20 +310,22 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                             component.blendMode = if (item === it.item) BlendMode.NORMAL else BlendMode.INVERT
                         }
                     }
-                    requirementComponents[it.item.name]?.text =
-                        it.item.name.toText(game.requirements[it.item.name] ?: 0)
+                    taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ItemConsumed -> {
                     itemComponents[it.item]?.visible = false
-                    requirementComponents[it.item.name]?.text =
-                        it.item.name.toText(game.requirements[it.item.name] ?: 0)
+                    taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ExitOpened -> {
-                    openedExits.forEach { exit -> exit.visible = true }
-                    closedExits.forEach { exit -> exit.visible = false }
+                    openedExits.values.forEach { exit -> exit.visible = true }
+                    closedExits.values.forEach { exit -> exit.visible = false }
                 }
                 is NothingHappened -> { }
-                is GameEnded -> { }
+                is ExitEntered -> {
+                    openedExits[it.exit]?.blendMode = BlendMode.INVERT
+                    player.blendMode = BlendMode.ALPHA
+                }
+                is GameEnded -> player.blendMode = BlendMode.NORMAL
                 is GameReset -> dispatchKeyEvent(Key.ENTER)
             }
         }

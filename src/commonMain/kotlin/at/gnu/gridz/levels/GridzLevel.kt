@@ -6,7 +6,7 @@ import at.gnu.gridz.Pill
 import at.gnu.gridz.Teleport
 import korlibs.io.lang.indexOfOrNull
 
-open class TestLevel {
+open class GridzLevel {
 
     open val layout = """
         ************ *******
@@ -33,8 +33,8 @@ open class TestLevel {
 
     open val title = "Test"
     open val maxInventory = 10
-    open val tailLitTime = 50000L
-    open val requirements = mapOf(Key.NAME to 3, Pill.NAME to 40, Teleport.NAME to 1, Empty.NAME to 45)
+    open val tailLitTime = 60000L
+    open val tasks = mapOf(Key.NAME to 3, Pill.NAME to 40, Teleport.NAME to 1, Empty.NAME to 45)
 
     open val rows: Int get() = layout.size
     open val cols: Int get() = layout.maxOf { it.length }

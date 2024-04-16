@@ -10,6 +10,25 @@ sealed class GridzAction {
 
 data object NoAction : GridzAction()
 
+class EnterExit(fromX: Float, fromY: Float, private val toX: Float, private val toY: Float) : GridzAction() {
+
+    private var x = fromX.also { println(it) }
+    private var y = fromY.also { println(it) }
+    private var time = 0L
+
+    override fun perform(dt: Long): Triple<State, Float, Float> {
+        time += dt
+        return if (time < 300L)
+            Triple(State.RUNNING, x + (time * (toX - x) / 300.0f), y + (time * (toY - y) / 300.0f))
+        else
+            Triple(State.FINISHED, toX, toY)
+    }
+
+    companion object {
+        const val NAME = "Goto"
+    }
+}
+
 class Teleport(game: GridzGame, fromX: Int, fromY: Int, toX: Int, toY: Int) : GridzAction() {
 
     private var time = 0L
@@ -25,12 +44,12 @@ class Teleport(game: GridzGame, fromX: Int, fromY: Int, toX: Int, toY: Int) : Gr
         val x: Float
         val y: Float
         if (time < 300L) {
-            x = startX + time * (fromX - startX) / 300.0f
-            y = startY + time * (fromY - startY) / 300.0f
+            x = startX + (time * (fromX - startX) / 300.0f)
+            y = startY + (time * (fromY - startY) / 300.0f)
             return Triple(State.RUNNING, x, y)
         } else if (time < 600L) {
-            x = fromX + (time - 300L) * (toX - fromX) / 300.0f
-            y = fromY + (time - 300L) * (toY - fromY) / 300.0f
+            x = fromX + ((time - 300L) * (toX - fromX) / 300.0f)
+            y = fromY + ((time - 300L) * (toY - fromY) / 300.0f)
             return Triple(State.RUNNING, x, y)
         } else if (time < 700L) {
             return Triple(State.RUNNING, toX, toY)
