@@ -11,6 +11,8 @@ import korlibs.korge.input.keys
 import korlibs.korge.input.singleTouch
 import korlibs.korge.scene.AlphaTransition
 import korlibs.korge.scene.PixelatedScene
+import korlibs.korge.ui.UIButton
+import korlibs.korge.ui.uiButton
 import korlibs.korge.view.*
 import korlibs.korge.view.align.alignRightToRightOf
 import korlibs.math.geom.Point
@@ -46,6 +48,11 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     private var pointer = Circle()
     private var from: GridzTile? = null
     private var to: GridzTile? = null
+    private var previousButton = UIButton()
+    private var pauseButton = UIButton()
+    private var resetButton = UIButton()
+    private var nextButton = UIButton()
+
     private lateinit var player: Image
 
 
@@ -170,7 +177,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                 }
 
                 for (i in 0 until game.level.maxInventory) {
-                    inventoryComponents += roundRect(Size(24, 24), RectCorners(0), Colors["#402020"], Colors["#a08080"], 2) {
+                    inventoryComponents += roundRect(Size(24, 24), RectCorners(0), Colors["#503030"], Colors["#a08080"], 2) {
                         position(12 + (i % 5) * 28, 220 + (i / 5) * 28)
                     }
                 }
@@ -179,6 +186,23 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     requirementComponents[name] = text(name.toText(amount), 12, Colors.WHITESMOKE, defaultFont) {
                         position(10, 290 + (y * 20))
                     }
+                }
+
+                previousButton = uiButton("<") {
+                    size(32, 24)
+                    position(10, 444)
+                }
+                resetButton = uiButton("^") {
+                    size(32, 24)
+                    position(46, 444)
+                }
+                pauseButton = uiButton("=") {
+                    size(32, 24)
+                    position(82, 444)
+                }
+                nextButton = uiButton(">") {
+                    size(32, 24)
+                    position(118, 444)
                 }
 
                 alignRightToRightOf(this@sceneInit)
@@ -192,6 +216,11 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     }
 
     override suspend fun SContainer.sceneMain() {
+
+        pauseButton.onPress { pauseScene() }
+        nextButton.onPress { dispatchKeyEvent(Key.N) }
+        previousButton.onPress { dispatchKeyEvent(Key.B) }
+        resetButton.onPress { dispatchKeyEvent(Key.ENTER) }
 
         keys {
             down(Key.ENTER) { resetScene() }
@@ -218,12 +247,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
 
         singleTouch {
             tap {
-                if (it.id == 0) {
-                    when (game.state) {
-                        GridzGame.State.ENDED -> dispatchKeyEvent(Key.N)
-                        else -> pauseScene()
-                    }
-                }
+                if ((it.id == 0) && (game.state == GridzGame.State.ENDED))
+                    dispatchKeyEvent(Key.N)
             }
         }
 
