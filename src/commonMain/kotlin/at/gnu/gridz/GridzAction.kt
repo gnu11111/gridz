@@ -1,27 +1,32 @@
 package at.gnu.gridz
 
-sealed class GridzAction {
-    enum class State { RUNNING, FINISHED }
+sealed class GridzAction(open val endEvent: GridzEvent? = null) {
 
-    open fun perform(dt: Long): Triple<State, Float, Float> {
-        return Triple(State.RUNNING, 0.0f, 0.0f)
+    open fun perform(dt: Long): Triple<GridzEvent?, Float, Float> {
+        return Triple(endEvent, 0.0f, 0.0f)
     }
 }
 
 data object NoAction : GridzAction()
 
-class EnterExit(fromX: Float, fromY: Float, private val toX: Float, private val toY: Float) : GridzAction() {
+class EnterExit(
+    fromX: Float,
+    fromY: Float,
+    private val toX: Float,
+    private val toY: Float,
+    override val endEvent: GridzEvent?
+) : GridzAction(endEvent) {
 
     private var x = fromX.also { println(it) }
     private var y = fromY.also { println(it) }
     private var time = 0L
 
-    override fun perform(dt: Long): Triple<State, Float, Float> {
+    override fun perform(dt: Long): Triple<GridzEvent?, Float, Float> {
         time += dt
         return if (time < 300L)
-            Triple(State.RUNNING, x + (time * (toX - x) / 300.0f), y + (time * (toY - y) / 300.0f))
+            Triple(null, x + (time * (toX - x) / 300.0f), y + (time * (toY - y) / 300.0f))
         else
-            Triple(State.FINISHED, toX, toY)
+            Triple(endEvent, toX, toY)
     }
 
     companion object {
@@ -29,32 +34,38 @@ class EnterExit(fromX: Float, fromY: Float, private val toX: Float, private val 
     }
 }
 
-class Teleport(game: GridzGame, fromX: Int, fromY: Int, toX: Int, toY: Int) : GridzAction() {
+class Teleport(
+    private val startX: Float,
+    private val startY: Float,
+    fromX: Int,
+    fromY: Int,
+    toX: Int,
+    toY: Int,
+    override val endEvent: GridzEvent?
+) : GridzAction(endEvent) {
 
     private var time = 0L
-    private var startX = game.x
-    private var startY = game.y
     private val fromX = fromX + 0.5f
     private val fromY = fromY + 0.5f
     private val toX = toX + 0.5f
     private val toY = toY + 0.5f
 
-    override fun perform(dt: Long): Triple<State, Float, Float> {
+    override fun perform(dt: Long): Triple<GridzEvent?, Float, Float> {
         time += dt
         val x: Float
         val y: Float
         if (time < 300L) {
             x = startX + (time * (fromX - startX) / 300.0f)
             y = startY + (time * (fromY - startY) / 300.0f)
-            return Triple(State.RUNNING, x, y)
+            return Triple(null, x, y)
         } else if (time < 600L) {
             x = fromX + ((time - 300L) * (toX - fromX) / 300.0f)
             y = fromY + ((time - 300L) * (toY - fromY) / 300.0f)
-            return Triple(State.RUNNING, x, y)
+            return Triple(null, x, y)
         } else if (time < 700L) {
-            return Triple(State.RUNNING, toX, toY)
+            return Triple(null, toX, toY)
         }
-        return Triple(State.FINISHED, toX, toY)
+        return Triple(endEvent, toX, toY)
     }
 
     companion object {

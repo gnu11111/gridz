@@ -2,7 +2,7 @@ package at.gnu.gridz
 
 sealed interface GridzEvent
 
-data object NothingHappened : GridzEvent
+data object ActionInProgress : GridzEvent
 
 data object GameEnded : GridzEvent
 

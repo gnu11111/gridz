@@ -81,13 +81,13 @@ class GridzGame : GridzHandler {
 
     override fun tick(inputX: Float, inputY: Float): List<GridzEvent> {
         if (state == State.PAUSED)
-            return listOf(NothingHappened)
+            return listOf(ActionInProgress)
         else if (state == State.LOADED) {
             if ((inputX != 0.0f) || (inputY != 0.0f)) {
                 state = State.RUNNING
                 start = DateTime.nowUnixMillisLong()
             } else
-                return listOf(NothingHappened)
+                return listOf(ActionInProgress)
         }
         val lastTimer = timer
         timer = DateTime.nowUnixMillisLong() - start - pauseTime
@@ -100,7 +100,8 @@ class GridzGame : GridzHandler {
                 state = State.ENDED
                 return listOf(event)
             }
-            else -> if (event != null) return listOf(event)
+            is ActionInProgress -> return listOf(event)
+            else -> { }
         }
         val (dx, dy) = updateSpeed(inputX, inputY, dt)
         val tile = updatePosition(dx, dy)
@@ -110,24 +111,16 @@ class GridzGame : GridzHandler {
     private fun handleAction(dt: Long): GridzEvent? {
         if (action == NoAction)
             return null
-        val (state, x, y) = action.perform(dt)
+        val (event, x, y) = action.perform(dt)
         this.x = x
         this.y = y
-        if (action is Teleport) {
-            if (state == GridzAction.State.FINISHED) {
-                action = NoAction
-                return TeleportEnded
-            }
-            return NothingHappened
-        }
-        if (action is EnterExit) {
-            if (state == GridzAction.State.FINISHED) {
-                action = NoAction
-                return GameEnded
-            }
-            return NothingHappened
-        }
-        return null
+        return if (event != null) {
+            action = NoAction
+            event
+        } else if ((action is EnterExit) || (action is Teleport)) {
+            ActionInProgress
+        } else
+            null
     }
 
     private fun handleTasks(name: String): List<GridzEvent> {
@@ -161,7 +154,7 @@ class GridzGame : GridzHandler {
         val events = mutableListOf<GridzEvent>()
         when (this) {
             is Exit -> {
-                action = EnterExit(this@GridzGame.x, this@GridzGame.y, x + 0.5f, y + 0.5f)
+                action = EnterExit(this@GridzGame.x, this@GridzGame.y, x + 0.5f, y + 0.5f, GameEnded)
                 events += ExitEntered(this)
             }
             is Empty -> if (level.tailLitTime > 0L) {
@@ -172,7 +165,7 @@ class GridzGame : GridzHandler {
             is Portal -> tiles.firstOrNull {
                 (it !== this) && (it is Portal) && (it.id == id)
             }?.let {
-                action = Teleport(this@GridzGame, x, y, it.x, it.y)
+                action = Teleport(this@GridzGame.x, this@GridzGame.y, x, y, it.x, it.y, TeleportEnded)
                 events += TeleportStarted(this, it)
             }
             is Wall -> events += GameReset.also { Console.error("Stuck in wall!") }

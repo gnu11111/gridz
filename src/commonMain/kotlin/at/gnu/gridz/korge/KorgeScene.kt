@@ -227,6 +227,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
             down(Key.P) { pauseScene() }
             down(Key.N) { nextScene() }
             down(Key.B) { previousScene() }
+            down(Key.ESCAPE) { views.gameWindow.close(0) }
         }
 
         gamepad {
@@ -303,11 +304,14 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                         val item = game.inventory[i]
                         val component = itemComponents[item]
                         if (component != null) {
-                            grid.removeChild(component)
-                            info.addChild(component)
-                            component.x = inventoryComponents[i].x
-                            component.y = inventoryComponents[i].y
-                            component.blendMode = if (item === it.item) BlendMode.NORMAL else BlendMode.INVERT
+                            if (it.item === item) {
+                                grid.removeChild(component)
+                                info.addChild(component)
+                                component.x = inventoryComponents[i].x
+                                component.y = inventoryComponents[i].y
+////                                component.size = Size(24.0, 24.0)
+                            } else
+                                component.blendMode = BlendMode.INVERT
                         }
                     }
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
@@ -320,7 +324,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     openedExits.values.forEach { exit -> exit.visible = true }
                     closedExits.values.forEach { exit -> exit.visible = false }
                 }
-                is NothingHappened -> { }
+                is ActionInProgress -> { }
                 is ExitEntered -> {
                     openedExits[it.exit]?.blendMode = BlendMode.INVERT
                     player.blendMode = BlendMode.ALPHA
