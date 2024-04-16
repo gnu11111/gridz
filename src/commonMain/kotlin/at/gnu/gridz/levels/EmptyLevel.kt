@@ -29,5 +29,6 @@ class EmptyLevel : TestLevel() {
     """.trimIndent().split("\n")
 
     override val title = "NOTHING"
+    override val maxInventory = 0
     override val requirements = mapOf(Teleport.NAME to 2, Empty.NAME to 50)
 }

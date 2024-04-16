@@ -32,7 +32,7 @@ open class TestLevel {
     """.trimIndent().split("\n")
 
     open val title = "Test"
-    open val maxInventory = 3
+    open val maxInventory = 10
     open val tailLitTime = 50000L
     open val requirements = mapOf(Key.NAME to 3, Pill.NAME to 40, Teleport.NAME to 1, Empty.NAME to 45)
 
