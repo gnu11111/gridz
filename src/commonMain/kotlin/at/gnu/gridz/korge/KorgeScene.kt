@@ -130,14 +130,14 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                 }
             }
 
-//            player = circle(
-//                radius = radius / 2.4,
-//                fill = Colors.DARKRED,
-//                stroke = Colors.ORANGE,
-//                strokeThickness = radius * 0.2
-//            ) {
-//                anchor(0.4, 0.4)
-//            }
+////        player = circle(
+////            radius = radius / 2.4,
+////            fill = Colors.DARKRED,
+////            stroke = Colors.ORANGE,
+////            strokeThickness = radius * 0.2
+////        ) {
+////            anchor(0.4, 0.4)
+////        }
             player = image(playerImage) {
                 size(tileWidth, tileHeight)
                 position((game.x * tileWidth), (game.y * tileHeight))
@@ -159,7 +159,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     position(108, 10)
                 }
 
-                timerText = text("00:00.00", 24, Colors["#d01030"], digitalFont) {
+////            timerText = text("00:00.00", 24, Colors["#d01030"], digitalFont) {
+                timerText = text("00:00.00", 20, Colors["#d01030"], defaultFont) {
                     position(12, 64)
                 }
 

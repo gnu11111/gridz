@@ -255,8 +255,8 @@ class GridzGame : GridzHandler {
         val nextY = if (nextYFloat >= 0.0f) nextYFloat.toInt() else level.rows - 1
         val offsetX = x - x.toInt()
         val offsetY = y - y.toInt()
-        val speedX = speed * sign(dx)
-        val speedY = speed * sign(dy)
+        val speedX = (speed * sign(dx)).coerceIn(-0.5f, 0.5f)
+        val speedY = (speed * sign(dy)).coerceIn(-0.5f, 0.5f)
 
         if ((nextX == thisX) && (nextY != thisY)) {
             if (!isWall(thisX, nextY) && ((offsetX < 0.5f) && (isWall(thisX - 1, nextY)))) {
