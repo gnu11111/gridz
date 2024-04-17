@@ -58,7 +58,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
-        val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
+////        val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
         val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
         val playerImage = KorgeAssets.image(KorgeAssets.Images.PLAYER)
         val wallImage = KorgeAssets.image(KorgeAssets.Images.WALL)
@@ -125,8 +125,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                         }
                     }
                 }
-                fpsText = text("0", 14, Colors.YELLOW, digitalFont) {
-                    position(4, 4)
+                fpsText = text("0", 12, Colors.YELLOW, defaultFont) {
+                    position(2, 0)
                 }
             }
 
@@ -228,6 +228,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
             down(Key.P) { pauseScene() }
             down(Key.N) { nextScene() }
             down(Key.B) { previousScene() }
+            down(Key.SPACE) { if (game.state == GridzGame.State.ENDED) nextScene() }
             down(Key.ESCAPE) { views.gameWindow.close(0) }
         }
 
@@ -235,6 +236,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
             button(0) { pressed, button, _ ->
                 if (pressed && allowGamepadInput) {
                     when (button) {
+                        GameButton.XBOX_A -> if (game.state == GridzGame.State.ENDED) nextScene()
                         GameButton.XBOX_B -> resetScene()
                         GameButton.START -> pauseScene()
                         GameButton.L1 -> previousScene()

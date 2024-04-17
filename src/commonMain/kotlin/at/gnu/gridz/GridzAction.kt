@@ -17,8 +17,8 @@ class EnterExit(
     override val endEvent: GridzEvent?
 ) : GridzAction(endEvent) {
 
-    private var x = fromX.also { println(it) }
-    private var y = fromY.also { println(it) }
+    private var x = fromX
+    private var y = fromY
     private var time = 0L
 
     override fun perform(dt: Long): Triple<GridzEvent?, Float, Float> {
