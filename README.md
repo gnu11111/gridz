@@ -4,7 +4,7 @@
 
 You can try a snapshot of the game (maybe not the latest version) here:
 http://www.gnu.at/gridz
-or download the JAR-file:
+or download the JAR-file (Java-17 required):
 http://www.gnu.at/gridz.jar
 
 ![Screenshot of the game](gridz.png)

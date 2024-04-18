@@ -44,7 +44,7 @@ class GridzGame : GridzHandler {
     private var start = 0L
     private var startPause = 0L
     private var pauseTime = 0L
-    private var lastMoved = 0L
+    private var timeSinceLastMoved = 0L
     private var action: GridzAction = NoAction
 
 
@@ -175,10 +175,10 @@ class GridzGame : GridzHandler {
 
     private fun checkTimeout(inputX: Float, inputY: Float, dt: Long): Boolean {
         if ((inputX != 0.0f) && (inputY != 0.0f))
-            lastMoved = 0L
+            timeSinceLastMoved = 0L
         else {
-            lastMoved += dt
-            if (lastMoved > NOT_MOVED_TIMEOUT)
+            timeSinceLastMoved += dt
+            if (timeSinceLastMoved > TIMEOUT_NOT_MOVING)
                 return true
         }
         return false
@@ -189,7 +189,7 @@ class GridzGame : GridzHandler {
         this.levelNumber = levelNumber
         this.level = levels[levelNumber]
         pauseTime = 0L
-        lastMoved = 0L
+        timeSinceLastMoved = 0L
         x = level.startX + 0.5f
         y = level.startY + 0.5f
         acceleration = 0.0f
@@ -239,7 +239,7 @@ class GridzGame : GridzHandler {
         speed = if (acceleration != 0.0f)
             (speed + (factor * acceleration)).coerceIn(0.0f, factor * 5.0f)
         else
-            (speed - (factor * 1.0f)).coerceAtLeast(0.0f)
+            (speed - factor).coerceAtLeast(0.0f)
         val dx = speed * sin(direction)
         val dy = speed * cos(direction)
         return (if (abs(dx) < 0.004f) 0.0f else dx) to (if (abs(dy) < 0.004f) 0.0f else dy)
@@ -342,6 +342,6 @@ class GridzGame : GridzHandler {
 
     companion object {
         const val NAME = "gridZ"
-        const val NOT_MOVED_TIMEOUT = 60000L
+        const val TIMEOUT_NOT_MOVING = 60000L
     }
 }
