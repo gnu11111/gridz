@@ -23,8 +23,8 @@ Control the character with:
 - `A` to go to next level after current level completed
 - `B` reset the current level
 - `Start` pause (toggle)
-- `L1` previous level
-- `R1` next level
+- `LB` previous level
+- `RB` next level
 
 ### Mouse
 

@@ -233,7 +233,8 @@ class GridzGame : GridzHandler {
 
     private fun updateSpeed(inputX: Float, inputY: Float, dt: Long): Pair<Float, Float> {
         acceleration = sqrt((inputX * inputX) + (inputY * inputY)).coerceAtMost(1.0f)
-        direction = atan2(inputX, inputY)
+        if ((abs(inputX) + abs(inputY))> 0.004f)
+            direction = atan2(inputX, inputY)
         val factor = dt / 500.0f
         speed = if (acceleration != 0.0f)
             (speed + (factor * acceleration)).coerceIn(0.0f, factor * 5.0f)
