@@ -3,7 +3,9 @@ package at.gnu.gridz.korge
 import at.gnu.gridz.*
 import at.gnu.gridz.GridzGame.State.*
 import at.gnu.gridz.korge.KorgeRenderer.Companion.HEIGHT
+import at.gnu.gridz.korge.KorgeRenderer.Companion.SOUND_ENABLED
 import at.gnu.gridz.korge.KorgeRenderer.Companion.WIDTH
+import korlibs.audio.sound.Sound
 import korlibs.event.*
 import korlibs.event.Key
 import korlibs.image.color.Colors
@@ -284,9 +286,9 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
     private fun List<GridzEvent>.handleEvents() {
         forEach {
             when (it) {
-                is TileEntered -> { } //// walkSound.playNoCancel()
+                is TileEntered -> { } //// walkSound.start()
                 is TileLit -> {
-////                    walkSound.playNoCancel()
+////                    walkSound.start()
                     tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                         Colors["#143014"]
                     else
@@ -298,7 +300,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 else
                     Colors["#1a1a1a"]
                 is TeleportStarted -> {
-                    teleportSound.playNoCancel()
+                    teleportSound.start()
                     from = it.from
                     to = it.to
                     tileComponents[from]?.color = Colors["#305050"]
@@ -318,7 +320,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     taskComponents[Teleport.NAME]?.text = Teleport.NAME.toText(game.tasks[Teleport.NAME] ?: 0)
                 }
                 is ItemCollected -> {
-                    collectSound.playNoCancel()
+                    collectSound.start()
                     for (i in game.inventory.indices) {
                         val item = game.inventory[i]
                         val component = itemComponents[item]
@@ -336,18 +338,18 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ItemConsumed -> {
-                    consumeSound.playNoCancel()
+                    consumeSound.start()
                     itemComponents[it.item]?.visible = false
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ExitOpened -> {
-                    exitOpenedSound.playNoCancel()
+                    exitOpenedSound.start()
                     openedExits.values.forEach { exit -> exit.visible = true }
                     closedExits.values.forEach { exit -> exit.visible = false }
                 }
                 is ActionInProgress -> { }
                 is ExitEntered -> {
-                    gameEndedSound.playNoCancel()
+                    gameEndedSound.start()
                     openedExits[it.exit]?.blendMode = BlendMode.INVERT
                     player.blendMode = BlendMode.ALPHA
                 }
@@ -455,4 +457,8 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
             Teleport.NAME -> "Port $amount Times"
             else -> "Color $amount Tiles"
         }
+
+    private fun Sound.start() {
+        if (SOUND_ENABLED) playNoCancel()
+    }
 }

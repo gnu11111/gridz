@@ -26,5 +26,6 @@ class KorgeRenderer {
         const val WIDTH = 480
         const val HEIGHT = 480
         const val INFO_WIDTH = 160
+        const val SOUND_ENABLED = true
     }
 }

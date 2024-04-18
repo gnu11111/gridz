@@ -47,25 +47,13 @@ object KorgeAssets {
 
     suspend fun load() {
         fonts = buildMap {
-            put(Fonts.DEFAULT, resourcesVfs["$FONTS_DIRECTORY/${Fonts.DEFAULT.filename}"].readFont())
-            put(Fonts.TITLE, resourcesVfs["$FONTS_DIRECTORY/${Fonts.TITLE.filename}"].readFont())
-            put(Fonts.DIGITAL, resourcesVfs["$FONTS_DIRECTORY/${Fonts.DIGITAL.filename}"].readFont())
+            Fonts.entries.forEach { put(it, resourcesVfs["$FONTS_DIRECTORY/${it.filename}"].readFont()) }
         }
         images = buildMap {
-            put(Images.PLAYER, resourcesVfs["$IMAGES_DIRECTORY/${Images.PLAYER.filename}"].readBitmap())
-            put(Images.WALL, resourcesVfs["$IMAGES_DIRECTORY/${Images.WALL.filename}"].readBitmap())
-            put(Images.KEY, resourcesVfs["$IMAGES_DIRECTORY/${Images.KEY.filename}"].readBitmap())
-            put(Images.PILL, resourcesVfs["$IMAGES_DIRECTORY/${Images.PILL.filename}"].readBitmap())
-            put(Images.CLOSED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.CLOSED_EXIT.filename}"].readBitmap())
-            put(Images.OPENED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.OPENED_EXIT.filename}"].readBitmap())
+            Images.entries.forEach { put(it, resourcesVfs["$IMAGES_DIRECTORY/${it.filename}"].readBitmap()) }
         }
         sounds = buildMap {
-            put(Sounds.WALK, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.WALK.filename}"].readSound())
-            put(Sounds.CONSUME, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.CONSUME.filename}"].readSound())
-            put(Sounds.COLLECT, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.COLLECT.filename}"].readSound())
-            put(Sounds.TELEPORT, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.TELEPORT.filename}"].readSound())
-            put(Sounds.EXIT_OPENED, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.EXIT_OPENED.filename}"].readSound())
-            put(Sounds.GAME_ENDED, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.GAME_ENDED.filename}"].readSound())
+            Sounds.entries.forEach { put(it, resourcesVfs["$SOUNDS_DIRECTORY/${it.filename}"].readSound()) }
         }
     }
 
