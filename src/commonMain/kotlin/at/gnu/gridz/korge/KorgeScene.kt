@@ -11,6 +11,8 @@ import korlibs.korge.input.keys
 import korlibs.korge.input.singleTouch
 import korlibs.korge.scene.AlphaTransition
 import korlibs.korge.scene.PixelatedScene
+import korlibs.korge.service.storage.NativeStorage
+import korlibs.korge.service.storage.storage
 import korlibs.korge.ui.UIButton
 import korlibs.korge.ui.uiButton
 import korlibs.korge.view.*
@@ -24,7 +26,7 @@ import kotlin.math.*
 
 ////class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
 ////    : ScaledScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
-class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
+class KorgeScene(private val game: GridzGame, storage: NativeStorage, private val infoWidth: Int)
     : PixelatedScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
 
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
@@ -39,6 +41,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     private var grid = Container()
     private var info = Container()
     private var timerText: Text = Text("")
+    private var bestTime = storage.getOrNull("${game.levelNumber}:bestTime")?.toLongOrNull() ?: -1L
+    private var bestTimeText: Text = Text("")
     private var fpsText: Text = Text("")
     private var frames = 0
     private var lastTime = game.timer
@@ -173,7 +177,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                 text("Best time", 16, Colors.WHITESMOKE, defaultFont) {
                     position(22, 160)
                 }
-                text("00:00:00", 16, Colors.WHITESMOKE, defaultFont) {
+                bestTimeText = text(bestTime.toDigitalTime(), 16, Colors.WHITESMOKE, defaultFont) {
                     position(30, 180)
                 }
 
@@ -332,7 +336,14 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
                     openedExits[it.exit]?.blendMode = BlendMode.INVERT
                     player.blendMode = BlendMode.ALPHA
                 }
-                is GameEnded -> player.blendMode = BlendMode.NORMAL
+                is GameEnded -> {
+                    player.blendMode = BlendMode.NORMAL
+                    if ((bestTime < 0L) || (game.timer < bestTime)) {
+                        bestTime = game.timer
+                        bestTimeText.text = bestTime.toDigitalTime()
+                        storage["${game.levelNumber}:bestTime"] = bestTime.toString()
+                    }
+                }
                 is GameReset -> dispatchKeyEvent(Key.ENTER)
             }
         }
@@ -346,7 +357,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
         transition = true
         game.reset()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, infoWidth)
+            KorgeScene(game, storage, infoWidth)
         }
     }
 
@@ -359,7 +370,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
         transition = true
         game.next()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, infoWidth)
+            KorgeScene(game, storage, infoWidth)
         }
     }
 
@@ -367,7 +378,7 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
         transition = true
         game.previous()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, infoWidth)
+            KorgeScene(game, storage, infoWidth)
         }
     }
 
@@ -411,6 +422,8 @@ class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
     }
 
     private fun Long.toDigitalTime(): String {
+        if (this < 0L)
+            return "--:--:--"
         val minutes = (this % 3600000L) / 60000L
         val seconds = (this % 60000L) / 1000L
         val hundreds = (this % 1000L) / 10L

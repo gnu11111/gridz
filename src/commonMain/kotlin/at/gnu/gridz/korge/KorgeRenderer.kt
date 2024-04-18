@@ -4,6 +4,7 @@ import at.gnu.gridz.GridzGame
 import korlibs.image.color.Colors
 import korlibs.korge.Korge
 import korlibs.korge.scene.*
+import korlibs.korge.service.storage.storage
 import korlibs.math.geom.Size
 
 class KorgeRenderer {
@@ -16,7 +17,7 @@ class KorgeRenderer {
             virtualSize = Size(WIDTH + INFO_WIDTH, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { KorgeScene(gridzGame, INFO_WIDTH) }
+            sceneContainer().changeTo { KorgeScene(gridzGame, this@Korge.views.storage, INFO_WIDTH) }
         }
     }
 
