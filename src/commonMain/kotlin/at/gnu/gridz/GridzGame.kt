@@ -10,7 +10,7 @@ import kotlin.math.*
 
 class GridzGame : GridzHandler {
 
-    enum class State { INIT, LOADED, RUNNING, PAUSED, ENDED, UNKNOWN }
+    enum class State { INIT, LOADED, RUNNING, COMPLETED, ENDED, PAUSED, UNKNOWN }
 
     private val levels = listOf(GridzLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
@@ -124,9 +124,10 @@ class GridzGame : GridzHandler {
     }
 
     private fun handleTasks(name: String): List<GridzEvent> {
-        if (tasks.contains(name)) {
+        if ((state != State.COMPLETED) && tasks.contains(name)) {
             tasks[name] = tasks[name]!!.minus(1).coerceAtLeast(0)
             if (tasks.all { it.value <= 0 }) {
+                state = State.COMPLETED
                 tiles.forEach { if (it is Exit) it.open = true }
                 return listOf(ExitOpened)
             }
@@ -148,9 +149,9 @@ class GridzGame : GridzHandler {
         return events
     }
 
-    private fun GridzTile?.onEntered(): MutableList<GridzEvent> {
+    private fun GridzTile?.onEntered(): List<GridzEvent> {
         if (this == null)
-            return mutableListOf()
+            return emptyList()
         val events = mutableListOf<GridzEvent>()
         when (this) {
             is Exit -> {
@@ -170,7 +171,7 @@ class GridzGame : GridzHandler {
             }
             is Wall -> events += GameReset.also { Console.error("Stuck in wall!") }
         }
-        return events
+        return events.ifEmpty { listOf(TileEntered) }
     }
 
     private fun checkTimeout(inputX: Float, inputY: Float, dt: Long): Boolean {

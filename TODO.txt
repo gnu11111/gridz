@@ -1,8 +1,6 @@
 
 Next steps:
 
-- preserve high scores
-- create sounds
 - design a first real level
 
 
@@ -22,6 +20,8 @@ Ideas:
 
 Done:
 
+- create sounds
+- preserve high scores
 - convert rendered graphics into images
 - timeout when not moving
 - buttons for reset, pause, next, previous

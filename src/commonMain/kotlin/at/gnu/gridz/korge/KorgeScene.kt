@@ -1,6 +1,7 @@
 package at.gnu.gridz.korge
 
 import at.gnu.gridz.*
+import at.gnu.gridz.GridzGame.State.*
 import at.gnu.gridz.korge.KorgeRenderer.Companion.HEIGHT
 import at.gnu.gridz.korge.KorgeRenderer.Companion.WIDTH
 import korlibs.event.*
@@ -37,6 +38,13 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
     private val closedExits = mutableMapOf<GridzTile, Image>()
     private val tileWidth = WIDTH / game.level.cols
     private val tileHeight = HEIGHT / game.level.rows
+
+////    private val walkSound = KorgeAssets.sound(KorgeAssets.Sounds.WALK)
+    private val consumeSound = KorgeAssets.sound(KorgeAssets.Sounds.CONSUME)
+    private val collectSound = KorgeAssets.sound(KorgeAssets.Sounds.COLLECT)
+    private val teleportSound = KorgeAssets.sound(KorgeAssets.Sounds.TELEPORT)
+    private val exitOpenedSound = KorgeAssets.sound(KorgeAssets.Sounds.EXIT_OPENED)
+    private val gameEndedSound = KorgeAssets.sound(KorgeAssets.Sounds.GAME_ENDED)
 
     private var grid = Container()
     private var info = Container()
@@ -263,7 +271,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         addUpdater(referenceFps = 60.fps) {
 ////        addFixedUpdater(60.timesPerSecond) {
             val (dx, dy) = movementInput()
-            if (!transition && (game.state == GridzGame.State.LOADED) || (game.state == GridzGame.State.RUNNING)) {
+            if (!transition && (game.state == LOADED) || (game.state == RUNNING) || (game.state == COMPLETED)) {
                 game.tick(dx.toFloat(), dy.toFloat()).handleEvents()
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x * tileWidth, game.y * tileHeight)
@@ -276,7 +284,9 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
     private fun List<GridzEvent>.handleEvents() {
         forEach {
             when (it) {
+                is TileEntered -> { } //// walkSound.playNoCancel()
                 is TileLit -> {
+////                    walkSound.playNoCancel()
                     tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
                         Colors["#143014"]
                     else
@@ -288,6 +298,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 else
                     Colors["#1a1a1a"]
                 is TeleportStarted -> {
+                    teleportSound.playNoCancel()
                     from = it.from
                     to = it.to
                     tileComponents[from]?.color = Colors["#305050"]
@@ -307,6 +318,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     taskComponents[Teleport.NAME]?.text = Teleport.NAME.toText(game.tasks[Teleport.NAME] ?: 0)
                 }
                 is ItemCollected -> {
+                    collectSound.playNoCancel()
                     for (i in game.inventory.indices) {
                         val item = game.inventory[i]
                         val component = itemComponents[item]
@@ -324,15 +336,18 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ItemConsumed -> {
+                    consumeSound.playNoCancel()
                     itemComponents[it.item]?.visible = false
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
                 }
                 is ExitOpened -> {
+                    exitOpenedSound.playNoCancel()
                     openedExits.values.forEach { exit -> exit.visible = true }
                     closedExits.values.forEach { exit -> exit.visible = false }
                 }
                 is ActionInProgress -> { }
                 is ExitEntered -> {
+                    gameEndedSound.playNoCancel()
                     openedExits[it.exit]?.blendMode = BlendMode.INVERT
                     player.blendMode = BlendMode.ALPHA
                 }
@@ -383,7 +398,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
     }
 
     private fun updateFps() {
-        if (game.state != GridzGame.State.RUNNING) return
+        if (game.state != RUNNING) return
         if ((game.timer - lastTime) < 1000L)
             frames++
         else {

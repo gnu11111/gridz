@@ -1,5 +1,7 @@
 package at.gnu.gridz.korge
 
+import korlibs.audio.sound.Sound
+import korlibs.audio.sound.readSound
 import korlibs.image.bitmap.Bitmap
 import korlibs.image.font.Font
 import korlibs.image.font.readFont
@@ -24,12 +26,23 @@ object KorgeAssets {
         DEFAULT("wall.png");
     }
 
+    enum class Sounds(val filename: String) {
+        WALK("walk.wav"),
+        CONSUME("consume.wav"),
+        COLLECT("collect.wav"),
+        TELEPORT("teleport.wav"),
+        EXIT_OPENED("exitOpened.wav"),
+        GAME_ENDED("gameEnded.wav")
+    }
+
 
     private const val FONTS_DIRECTORY = "fonts/"
     private const val IMAGES_DIRECTORY = "images/"
+    private const val SOUNDS_DIRECTORY = "sounds/"
 
     private lateinit var fonts: Map<Fonts, Font>
     private lateinit var images: Map<Images, Bitmap>
+    private lateinit var sounds: Map<Sounds, Sound>
 
 
     suspend fun load() {
@@ -46,6 +59,14 @@ object KorgeAssets {
             put(Images.CLOSED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.CLOSED_EXIT.filename}"].readBitmap())
             put(Images.OPENED_EXIT, resourcesVfs["$IMAGES_DIRECTORY/${Images.OPENED_EXIT.filename}"].readBitmap())
         }
+        sounds = buildMap {
+            put(Sounds.WALK, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.WALK.filename}"].readSound())
+            put(Sounds.CONSUME, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.CONSUME.filename}"].readSound())
+            put(Sounds.COLLECT, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.COLLECT.filename}"].readSound())
+            put(Sounds.TELEPORT, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.TELEPORT.filename}"].readSound())
+            put(Sounds.EXIT_OPENED, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.EXIT_OPENED.filename}"].readSound())
+            put(Sounds.GAME_ENDED, resourcesVfs["$SOUNDS_DIRECTORY/${Sounds.GAME_ENDED.filename}"].readSound())
+        }
     }
 
     fun font(font: Fonts): Font =
@@ -53,4 +74,7 @@ object KorgeAssets {
 
     fun image(image: Images): Bitmap =
         images.getOrElse(image) { images[Images.DEFAULT]!! }
+
+    fun sound(sound: Sounds): Sound =
+        sounds.getOrElse(sound) { sounds[Sounds.CONSUME]!! }
 }
