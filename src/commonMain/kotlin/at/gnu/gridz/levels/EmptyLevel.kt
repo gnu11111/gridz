@@ -1,7 +1,5 @@
 package at.gnu.gridz.levels
 
-import at.gnu.gridz.Empty
-
 class EmptyLevel : GridzLevel() {
 
     override val layout = """
@@ -30,5 +28,5 @@ class EmptyLevel : GridzLevel() {
     override val title = "NOTHING"
     override val maxInventory = 0
     override val tailLitTime = 5000L
-    override val tasks = mapOf(Empty.NAME to 10)
+    override val tasks = emptyMap<String, Int>()
 }

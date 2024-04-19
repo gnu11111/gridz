@@ -10,7 +10,7 @@ import kotlin.math.*
 
 class GridzGame : GridzHandler {
 
-    enum class State { INIT, LOADED, RUNNING, COMPLETED, ENDED, PAUSED, UNKNOWN }
+    enum class State { INIT, LOADED, RUNNING, ENDED, PAUSED, UNKNOWN }
 
     private val levels = listOf(GridzLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
 
@@ -40,6 +40,7 @@ class GridzGame : GridzHandler {
         private set
 
     private var preferX = true
+    private var levelCompleted = false
     private var speed = 0.0f
     private var start = 0L
     private var startPause = 0L
@@ -80,15 +81,14 @@ class GridzGame : GridzHandler {
     }
 
     override fun tick(inputX: Float, inputY: Float): List<GridzEvent> {
-        if (state == State.PAUSED)
-            return listOf(ActionInProgress)
-        else if (state == State.LOADED) {
+        if (state == State.LOADED) {
             if ((inputX != 0.0f) || (inputY != 0.0f)) {
                 state = State.RUNNING
                 start = DateTime.nowUnixMillisLong()
             } else
                 return listOf(ActionInProgress)
-        }
+        } else if (state != State.RUNNING)
+            return emptyList()
         val lastTimer = timer
         timer = DateTime.nowUnixMillisLong() - start - pauseTime
         val dt = timer - lastTimer
@@ -124,10 +124,11 @@ class GridzGame : GridzHandler {
     }
 
     private fun handleTasks(name: String): List<GridzEvent> {
-        if ((state != State.COMPLETED) && tasks.contains(name)) {
-            tasks[name] = tasks[name]!!.minus(1).coerceAtLeast(0)
-            if (tasks.all { it.value <= 0 }) {
-                state = State.COMPLETED
+        if (!levelCompleted) {
+            if (tasks.contains(name))
+                tasks[name] = tasks[name]!!.minus(1).coerceAtLeast(0)
+            if (tasks.areCompleted()) {
+                levelCompleted = true
                 tiles.forEach { if (it is Exit) it.open = true }
                 return listOf(ExitOpened)
             }
@@ -200,6 +201,7 @@ class GridzGame : GridzHandler {
         items = arrayListOf()
         inventory = arrayListOf()
         tasks = level.tasks.toMutableMap()
+        levelCompleted = false
         for (y in 0 until level.rows) {
             val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {
@@ -340,6 +342,8 @@ class GridzGame : GridzHandler {
         return tile is Wall || ((tile is Exit) && !tile.open)
     }
 
+    private fun Map<String, Int>.areCompleted(): Boolean =
+        isEmpty() || all { it.value <= 0 }
 
     companion object {
         const val NAME = "gridZ"

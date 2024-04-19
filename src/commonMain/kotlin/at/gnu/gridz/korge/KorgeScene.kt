@@ -273,7 +273,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         addUpdater(referenceFps = 60.fps) {
 ////        addFixedUpdater(60.timesPerSecond) {
             val (dx, dy) = movementInput()
-            if (!transition && (game.state == LOADED) || (game.state == RUNNING) || (game.state == COMPLETED)) {
+            if (!transition) {
                 game.tick(dx.toFloat(), dy.toFloat()).handleEvents()
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x * tileWidth, game.y * tileHeight)
