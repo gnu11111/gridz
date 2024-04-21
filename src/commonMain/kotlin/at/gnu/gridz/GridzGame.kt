@@ -1,6 +1,6 @@
 package at.gnu.gridz
 
-import at.gnu.gridz.levels.EmptyLevel
+import at.gnu.gridz.levels.SpaceLevel
 import at.gnu.gridz.levels.GridzLevel
 import at.gnu.gridz.levels.PacmanLevel
 import at.gnu.gridz.levels.PortalsLevel
@@ -12,7 +12,7 @@ class GridzGame : GridzHandler {
 
     enum class State { INIT, LOADED, RUNNING, ENDED, PAUSED, UNKNOWN }
 
-    private val levels = listOf(GridzLevel(), PacmanLevel(), EmptyLevel(), PortalsLevel())
+    private val levels = listOf(GridzLevel(), PacmanLevel(), SpaceLevel(), PortalsLevel())
 
     var direction = 0.0f
         private set

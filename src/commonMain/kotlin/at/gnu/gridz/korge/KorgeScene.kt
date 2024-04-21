@@ -157,7 +157,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 position((game.x * tileWidth), (game.y * tileHeight))
                 anchor(0.5, 0.5)
             }
-            pointer = circle(radius = radius / 6, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
+            pointer = circle(radius = radius / 6.0, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
             info = container {
                 roundRect(Size(infoWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
@@ -330,7 +330,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                                 info.addChild(component)
                                 component.x = inventoryComponents[i].x
                                 component.y = inventoryComponents[i].y
-////                                component.size = Size(24.0, 24.0)
+                                component.size = Size(576.0 / tileWidth, 576.0 / tileHeight)
                             } else
                                 component.blendMode = BlendMode.INVERT
                         }
