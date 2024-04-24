@@ -22,7 +22,7 @@ class PacmanLevel : GridzLevel() {
         ****.* ***** *.****
         *........*........*
         *.**.***.*.***.**.*
-        *k.*..... .....*.k*
+        *k.*.....o.....*.k*
         **.*.*.*****.*.*.**
         *....*...*...*....*
         *.******.*.******.*
@@ -31,7 +31,6 @@ class PacmanLevel : GridzLevel() {
     """.trimIndent().split("\n")
 
     override val title = "Pacman!"
-    override val startY = 16
     override val tailLitTime = 0L
     override val maxInventory = 4
     override val tasks = mapOf(Key.NAME to 4, Pill.NAME to 144)

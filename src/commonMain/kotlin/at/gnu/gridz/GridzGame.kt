@@ -117,9 +117,9 @@ class GridzGame : GridzHandler {
         return if (event != null) {
             action = NoAction
             event
-        } else if ((action is EnterExit) || (action is Teleport)) {
+        } else if ((action is EnterExit) || (action is Teleport))
             ActionInProgress
-        } else
+        else
             null
     }
 
@@ -243,8 +243,8 @@ class GridzGame : GridzHandler {
             (speed + (factor * acceleration)).coerceIn(0.0f, factor * 5.0f)
         else
             (speed - factor).coerceAtLeast(0.0f)
-        val dx = speed * sin(direction)
-        val dy = speed * cos(direction)
+        val dx = (speed * sin(direction)).coerceIn(-0.5f, 0.5f)
+        val dy = (speed * cos(direction)).coerceIn(-0.5f, 0.5f)
         return (if (abs(dx) < 0.004f) 0.0f else dx) to (if (abs(dy) < 0.004f) 0.0f else dy)
     }
 
@@ -259,8 +259,8 @@ class GridzGame : GridzHandler {
         val nextY = if (nextYFloat >= 0.0f) nextYFloat.toInt() else level.rows - 1
         val offsetX = x - x.toInt()
         val offsetY = y - y.toInt()
-        val speedX = (speed * sign(dx)).coerceIn(-0.5f, 0.5f)
-        val speedY = (speed * sign(dy)).coerceIn(-0.5f, 0.5f)
+        val speedX = speed * sign(dx)
+        val speedY = speed * sign(dy)
 
         if ((nextX == thisX) && (nextY != thisY)) {
             if (!isWall(thisX, nextY) && ((offsetX < 0.5f) && (isWall(thisX - 1, nextY)))) {

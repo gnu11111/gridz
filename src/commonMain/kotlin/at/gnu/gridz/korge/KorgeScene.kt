@@ -305,7 +305,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     to = it.to
                     tileComponents[from]?.color = Colors["#305050"]
                     tileComponents[to]?.color = Colors["#30a0a0"]
-                    player.blendMode = BlendMode.ALPHA
+                    player.colorMul = Colors["#ffffff60"]
                 }
                 is TeleportEnded -> {
                     tileComponents[from]?.color = if ((from!!.x + from!!.y).isEven)
@@ -316,7 +316,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                         Colors["#1d1d1d"]
                     else
                         Colors["#1a1a1a"]
-                    player.blendMode = BlendMode.NORMAL
+                    player.colorMul = Colors["#ffffffff"]
                     taskComponents[Teleport.NAME]?.text = Teleport.NAME.toText(game.tasks[Teleport.NAME] ?: 0)
                 }
                 is ItemCollected -> {
@@ -332,7 +332,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                                 component.y = inventoryComponents[i].y
                                 component.size = Size(576.0 / tileWidth, 576.0 / tileHeight)
                             } else
-                                component.blendMode = BlendMode.INVERT
+                                component.colorMul = Colors["#ffffff80"]
                         }
                     }
                     taskComponents[it.item.name]?.text = it.item.name.toText(game.tasks[it.item.name] ?: 0)
@@ -350,11 +350,11 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 is ActionInProgress -> { }
                 is ExitEntered -> {
                     gameEndedSound.start()
-                    openedExits[it.exit]?.blendMode = BlendMode.INVERT
-                    player.blendMode = BlendMode.ALPHA
+                    openedExits[it.exit]?.colorMul = Colors["#ffffff80"]
+                    player.colorMul = Colors["#ffffff80"]
                 }
                 is GameEnded -> {
-                    player.blendMode = BlendMode.NORMAL
+                    player.colorMul = Colors["#ffffffff"]
                     if ((bestTime < 0L) || (game.timer < bestTime)) {
                         bestTime = game.timer
                         bestTimeText.text = bestTime.toDigitalTime()
