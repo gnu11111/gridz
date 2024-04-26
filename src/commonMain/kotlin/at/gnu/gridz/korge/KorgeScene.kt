@@ -3,12 +3,14 @@ package at.gnu.gridz.korge
 import at.gnu.gridz.*
 import at.gnu.gridz.GridzGame.State.*
 import at.gnu.gridz.korge.KorgeRenderer.Companion.HEIGHT
+import at.gnu.gridz.korge.KorgeRenderer.Companion.INFO_WIDTH
 import at.gnu.gridz.korge.KorgeRenderer.Companion.SOUND_ENABLED
 import at.gnu.gridz.korge.KorgeRenderer.Companion.WIDTH
 import korlibs.audio.sound.Sound
 import korlibs.event.*
 import korlibs.event.Key
 import korlibs.image.color.Colors
+import korlibs.image.color.RGBA
 import korlibs.korge.input.gamepad
 import korlibs.korge.input.keys
 import korlibs.korge.input.singleTouch
@@ -27,12 +29,12 @@ import korlibs.math.isEven
 import korlibs.time.seconds
 import kotlin.math.*
 
-////class KorgeScene(private val game: GridzGame, private val infoWidth: Int)
-////    : ScaledScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
-class KorgeScene(private val game: GridzGame, storage: NativeStorage, private val infoWidth: Int)
-    : PixelatedScene(WIDTH + infoWidth, HEIGHT, sceneSmoothing = false) {
+class KorgeScene(private val game: GridzGame, storage: NativeStorage)
+    : PixelatedScene(WIDTH + INFO_WIDTH, HEIGHT, sceneSmoothing = false) {
+////: ScaledScene(WIDTH + INFO_WIDTH, HEIGHT, sceneSmoothing = false) {
 
     private val tileComponents = mutableMapOf<GridzTile, SolidRect>()
+    private val wallComponents = mutableMapOf<GridzTile, Image>()
     private val itemComponents = mutableMapOf<GridzItem, Image>()
     private val inventoryComponents = arrayListOf<RoundRect>()
     private val taskComponents = mutableMapOf<String, Text>()
@@ -41,7 +43,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
     private val tileWidth = WIDTH / game.level.cols
     private val tileHeight = HEIGHT / game.level.rows
 
-////    private val walkSound = KorgeAssets.sound(KorgeAssets.Sounds.WALK)
+////private val walkSound = KorgeAssets.sound(KorgeAssets.Sounds.DEFAULT)
     private val consumeSound = KorgeAssets.sound(KorgeAssets.Sounds.CONSUME)
     private val collectSound = KorgeAssets.sound(KorgeAssets.Sounds.COLLECT)
     private val teleportSound = KorgeAssets.sound(KorgeAssets.Sounds.TELEPORT)
@@ -72,7 +74,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
 
     override suspend fun SContainer.sceneInit() {
         val titleFont = KorgeAssets.font(KorgeAssets.Fonts.TITLE)
-////        val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
+////    val digitalFont = KorgeAssets.font(KorgeAssets.Fonts.DIGITAL)
         val defaultFont = KorgeAssets.font(KorgeAssets.Fonts.DEFAULT)
         val playerImage = KorgeAssets.image(KorgeAssets.Images.PLAYER)
         val wallImage = KorgeAssets.image(KorgeAssets.Images.WALL)
@@ -87,9 +89,9 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
 
             grid = container {
                 game.tiles.forEach { tile ->
-                    val color = if ((tile.x + tile.y).isEven) Colors["#1d1d1d"] else Colors["#1a1a1a"]
+                    val color = tile.backgroundColor()
                     when (tile) {
-                        is Wall -> image(wallImage) {
+                        is Wall -> wallComponents[tile] = image(wallImage) {
                             size(tileWidth, tileHeight)
                             position((tile.x * tileWidth), (tile.y * tileHeight))
                         }
@@ -160,7 +162,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
             pointer = circle(radius = radius / 6.0, fill = Colors.ANTIQUEWHITE) { anchor(0.5, 0.5) }
 
             info = container {
-                roundRect(Size(infoWidth - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
+                roundRect(Size(INFO_WIDTH - 6, sceneHeight - 6), RectCorners(4), Colors["#301a1a"], Colors["#602020"],
                     6) {
                     position(3, 3)
                 }
@@ -223,7 +225,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 alignRightToRightOf(this@sceneInit)
             }
 
-            dimmed = solidRect(WIDTH + infoWidth, HEIGHT) {
+            dimmed = solidRect(WIDTH + INFO_WIDTH, HEIGHT) {
                 colorMul = Colors["#00000040"]
                 visible = false
             }
@@ -278,6 +280,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                 timerText.text = game.timer.toDigitalTime()
                 player.position(game.x * tileWidth, game.y * tileHeight)
                 pointer.position(calculatePointerPostition())
+                pointer.color = calculatePointerColor()
                 updateFps()
             }
         }
@@ -288,17 +291,19 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
             when (it) {
                 is TileEntered -> { } //// walkSound.start()
                 is TileLit -> {
-////                    walkSound.start()
-                    tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
-                        Colors["#143014"]
-                    else
-                        Colors["#102810"]
+////                walkSound.start()
+                    tileComponents[it.tile]?.color = it.tile.backgroundColor()
                     taskComponents[Empty.NAME]?.text = Empty.NAME.toText(game.tasks[Empty.NAME] ?: 0)
                 }
-                is TileLitDeceased -> tileComponents[it.tile]?.color = if ((it.tile.x + it.tile.y).isEven)
-                    Colors["#1d1d1d"]
-                else
-                    Colors["#1a1a1a"]
+                is TileLitDeceased -> tileComponents[it.tile]?.color = it.tile.backgroundColor()
+                is TileCharged -> wallComponents[it.tile]?.alpha = 0.5
+                is WallMoved -> {
+                    val from = wallComponents[it.fromTile]
+                    from?.alpha = 1.0
+                    from?.position(it.fromTile.x * tileWidth, it.fromTile.y * tileHeight)
+                    tileComponents[it.toTile]?.position(it.toTile.x * tileWidth, it.toTile.y * tileHeight)
+                    tileComponents[it.toTile]?.color = it.toTile.backgroundColor()
+                }
                 is TeleportStarted -> {
                     teleportSound.start()
                     from = it.from
@@ -308,14 +313,8 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
                     player.colorMul = Colors["#ffffff60"]
                 }
                 is TeleportEnded -> {
-                    tileComponents[from]?.color = if ((from!!.x + from!!.y).isEven)
-                        Colors["#1d1d1d"]
-                    else
-                        Colors["#1a1a1a"]
-                    tileComponents[to]?.color = if ((to!!.x + to!!.y).isEven)
-                        Colors["#1d1d1d"]
-                    else
-                        Colors["#1a1a1a"]
+                    tileComponents[from]?.color = from?.backgroundColor()!!
+                    tileComponents[to]?.color = to?.backgroundColor()!!
                     player.colorMul = Colors["#ffffffff"]
                     taskComponents[Teleport.NAME]?.text = Teleport.NAME.toText(game.tasks[Teleport.NAME] ?: 0)
                 }
@@ -374,7 +373,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         transition = true
         game.reset()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, storage, infoWidth)
+            KorgeScene(game, storage)
         }
     }
 
@@ -387,7 +386,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         transition = true
         game.next()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, storage, infoWidth)
+            KorgeScene(game, storage)
         }
     }
 
@@ -395,7 +394,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         transition = true
         game.previous()
         sceneContainer.changeTo(time = 0.5.seconds, transition = AlphaTransition) {
-            KorgeScene(game, storage, infoWidth)
+            KorgeScene(game, storage)
         }
     }
 
@@ -428,6 +427,28 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage, private va
         val pointerY = (game.y * tileHeight) - (0.25 * game.acceleration * tileHeight * cos(game.direction))
         return Point(pointerX, pointerY)
     }
+
+    private fun calculatePointerColor(): RGBA =
+        if (game.chargeTile.charge <= 0L)
+            Colors.ANTIQUEWHITE
+        else {
+            val level = (255 - game.chargeTile.charge).toHex()
+            Colors["ff${level}${level}"]
+        }
+
+    private fun GridzTile?.backgroundColor() =
+        if ((this == null) || (x + y).isEven)
+            Colors["#1d1d1d"]
+        else
+            Colors["#1a1a1a"]
+
+    private fun Long.toHex() =
+        if (this <= 0L)
+            "00"
+        else if (this >= 255L)
+            "ff"
+        else
+            "0123456789abcdef"[((this / 16) % 16).toInt()].toString() + "0123456789abcdef"[(this % 16).toInt()]
 
     private fun mouseOrTouchOffsets(inputX: Double, inputY: Double): Pair<Double, Double> {
         val deltaX = inputX - (game.x * tileWidth)

@@ -9,6 +9,42 @@ sealed class GridzAction(open val endEvent: GridzEvent? = null) {
 
 data object NoAction : GridzAction()
 
+class MoveWall(
+    fromX: Float,
+    fromY: Float,
+    private val fromTile: GridzTile,
+    private val toTile: GridzTile,
+    override val endEvent: GridzEvent?
+) : GridzAction() {
+
+    private var time = 0L
+    private var x = fromX
+    private var y = fromY
+    private var toX = fromTile.x + 0.5f
+    private var toY = fromTile.y + 0.5f
+
+    override fun perform(dt: Long): Triple<GridzEvent?, Float, Float> {
+        if ((fromTile !is Wall) || (toTile !is Empty))
+            return Triple(endEvent, x, y)
+        time += dt
+        return if (time < 500L)
+            Triple(null, x + (time * (toX - x) / 500.0f), y + (time * (toY - y) / 500.0f))
+        else {
+            val tempX = fromTile.x
+            val tempY = fromTile.y
+            fromTile.x = toTile.x
+            fromTile.y = toTile.y
+            toTile.x = tempX
+            toTile.y = tempY
+            Triple(endEvent, toX, toY)
+        }
+    }
+
+    companion object {
+        const val NAME = "MoveWall"
+    }
+}
+
 class EnterExit(
     fromX: Float,
     fromY: Float,
@@ -27,10 +63,6 @@ class EnterExit(
             Triple(null, x + (time * (toX - x) / 300.0f), y + (time * (toY - y) / 300.0f))
         else
             Triple(endEvent, toX, toY)
-    }
-
-    companion object {
-        const val NAME = "Goto"
     }
 }
 

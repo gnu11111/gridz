@@ -1,9 +1,14 @@
 
 Next steps:
 
-- teleport using the dot on coloured tiles
 - move blocks
+  * move wall with player
+  * keep charge to immediately move again
+  * z-order: tiles, items, walls, player
+  * keep walls transparent when covering an item
+  * make movable and destroyable part of the level configuration
 - destroy blocks
+- teleport by navigating the dot to lit tiles
 - design a first real level
 
 

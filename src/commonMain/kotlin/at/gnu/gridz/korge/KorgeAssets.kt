@@ -11,28 +11,28 @@ import korlibs.io.file.std.resourcesVfs
 object KorgeAssets {
 
     enum class Fonts(val filename: String) {
+        DEFAULT("joystix monospace.otf"),
         TITLE("ARCADE.TTF"),
-        DIGITAL("Receiptional Receipt.ttf"),
-        DEFAULT("joystix monospace.otf");
+        DIGITAL("Receiptional Receipt.ttf");
     }
 
     enum class Images(val filename: String) {
+        DEFAULT("wall.png"),
         PLAYER("player.png"),
         WALL("wall.png"),
         KEY("key.png"),
         PILL("pill.png"),
         CLOSED_EXIT("closedExit.png"),
-        OPENED_EXIT("openedExit.png"),
-        DEFAULT("wall.png");
+        OPENED_EXIT("openedExit.png");
     }
 
     enum class Sounds(val filename: String) {
-        WALK("walk.wav"),
+        DEFAULT("walk.wav"),
         CONSUME("consume.wav"),
         COLLECT("collect.wav"),
         TELEPORT("teleport.wav"),
         EXIT_OPENED("exitOpened.wav"),
-        GAME_ENDED("gameEnded.wav")
+        GAME_ENDED("gameEnded.wav");
     }
 
 
@@ -64,5 +64,5 @@ object KorgeAssets {
         images.getOrElse(image) { images[Images.DEFAULT]!! }
 
     fun sound(sound: Sounds): Sound =
-        sounds.getOrElse(sound) { sounds[Sounds.CONSUME]!! }
+        sounds.getOrElse(sound) { sounds[Sounds.DEFAULT]!! }
 }

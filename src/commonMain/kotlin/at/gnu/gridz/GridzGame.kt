@@ -38,6 +38,8 @@ class GridzGame : GridzHandler {
         private set
     var y = 0.0f
         private set
+    var chargeTile = ChargeTile()
+        private set
 
     private var preferX = true
     private var levelCompleted = false
@@ -95,6 +97,7 @@ class GridzGame : GridzHandler {
         if (checkTimeout(inputX, inputY, dt))
             return listOf(GameReset)
         when (val event = handleAction(dt)) {
+            is WallMoved -> return listOf(event) + event.toTile.handleItems() + event.toTile.onEntered()
             is TeleportEnded -> return listOf(event) + handleTasks(Teleport.NAME)
             is GameEnded -> {
                 state = State.ENDED
@@ -104,8 +107,8 @@ class GridzGame : GridzHandler {
             else -> { }
         }
         val (dx, dy) = updateSpeed(inputX, inputY, dt)
-        val tile = updatePosition(dx, dy)
-        return tile.handleItems() + tile.onEntered() + updateTiles(dt)
+        val (nextTile, tile) = updatePosition(dx, dy)
+        return tile.handleItems() + tile.onEntered() + updateTiles(dt) + nextTile.updateCharging(dt)
     }
 
     private fun handleAction(dt: Long): GridzEvent? {
@@ -117,7 +120,7 @@ class GridzGame : GridzHandler {
         return if (event != null) {
             action = NoAction
             event
-        } else if ((action is EnterExit) || (action is Teleport))
+        } else if ((action is EnterExit) || (action is Teleport) || (action is MoveWall))
             ActionInProgress
         else
             null
@@ -202,23 +205,21 @@ class GridzGame : GridzHandler {
         inventory = arrayListOf()
         tasks = level.tasks.toMutableMap()
         levelCompleted = false
+        chargeTile = ChargeTile()
         for (y in 0 until level.rows) {
-            val row = arrayListOf<GridzTile>()
             for (x in 0 until level.cols) {
                 val c = level.layout.getOrNull(y)?.getOrNull(x) ?: ' '
-                val tile = when {
-                    (c == '*') -> Wall(x, y)
-                    (c == 'x') -> Exit(x, y)
-                    c.isDigit() -> Portal(x, y, c.digitToInt())
-                    else -> Empty(x, y)
+                when  {
+                    c.isDigit() -> tiles += Portal(x, y, c.digitToInt())
+                    (c == '*') -> tiles += Wall(x, y)
+                    (c == 'x') -> tiles += Exit(x, y)
+                    else -> tiles += Empty(x, y)
                 }
                 when (c) {
                     'k' -> items += Key(x, y)
                     '.' -> items += Pill(x, y)
                 }
-                row += tile
             }
-            tiles += row
         }
         state = State.LOADED
     }
@@ -248,7 +249,7 @@ class GridzGame : GridzHandler {
         return (if (abs(dx) < 0.004f) 0.0f else dx) to (if (abs(dy) < 0.004f) 0.0f else dy)
     }
 
-    private fun updatePosition(dx: Float, dy: Float): GridzTile? {
+    private fun updatePosition(dx: Float, dy: Float): Pair<GridzTile?, GridzTile?> {
         val thisX = x.toInt()
         val thisY = y.toInt()
         val snapX = thisX + 0.5f
@@ -259,17 +260,17 @@ class GridzGame : GridzHandler {
         val nextY = if (nextYFloat >= 0.0f) nextYFloat.toInt() else level.rows - 1
         val offsetX = x - x.toInt()
         val offsetY = y - y.toInt()
-        val speedX = speed * sign(dx)
-        val speedY = speed * sign(dy)
+        val speedX = (speed * sign(dx)).coerceIn(-0.5f, 0.5f)
+        val speedY = (speed * sign(dy)).coerceIn(-0.5f, 0.5f)
 
         if ((nextX == thisX) && (nextY != thisY)) {
-            if (!isWall(thisX, nextY) && ((offsetX < 0.5f) && (isWall(thisX - 1, nextY)))) {
+            if (!isBlocked(thisX, nextY) && ((offsetX < 0.5f) && (isBlocked(thisX - 1, nextY)))) {
                 if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX + 0.04f
                 y = snapY
-            } else if (!isWall(thisX, nextY) && ((offsetX > 0.5f) && (isWall(thisX + 1, nextY)))) {
+            } else if (!isBlocked(thisX, nextY) && ((offsetX > 0.5f) && (isBlocked(thisX + 1, nextY)))) {
                 if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX - 0.04f
                 y = snapY
-            } else if (isWall(thisX, nextY)) {
+            } else if (isBlocked(thisX, nextY)) {
                 preferX = false
                 x += speedX
             } else {
@@ -277,13 +278,13 @@ class GridzGame : GridzHandler {
                 y -= dy
             }
         } else if ((nextX != thisX) && (nextY == thisY)) {
-            if (!isWall(nextX, thisY) && ((offsetY > 0.5f) && (isWall(nextX, thisY + 1)))) {
+            if (!isBlocked(nextX, thisY) && ((offsetY > 0.5f) && (isBlocked(nextX, thisY + 1)))) {
                 x = snapX
                 if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY + 0.04f
-            } else if (!isWall(nextX, thisY) && ((offsetY < 0.5f) && (isWall(nextX, thisY - 1)))) {
+            } else if (!isBlocked(nextX, thisY) && ((offsetY < 0.5f) && (isBlocked(nextX, thisY - 1)))) {
                 x = snapX
                 if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY - 0.04f
-            } else if (isWall(nextX, thisY)) {
+            } else if (isBlocked(nextX, thisY)) {
                 preferX = true
                 y -= speedY
             } else {
@@ -292,27 +293,27 @@ class GridzGame : GridzHandler {
             }
         } else if ((nextX != thisX) && (nextY != thisY)) {
             preferX = if (abs(dx) > (2.0f * abs(dy))) true else if (abs(dy) > (2.0f * abs(dx))) false else preferX
-            if (!isWall(nextX, nextY) && isWall(nextX, thisY) && isWall(thisX, nextY)) {
+            if (!isBlocked(nextX, nextY) && isBlocked(nextX, thisY) && isBlocked(thisX, nextY)) {
                 // do nothing
-            } else if (isWall(nextX, nextY) && !isWall(nextX, thisY) && preferX) {
+            } else if (isBlocked(nextX, nextY) && !isBlocked(nextX, thisY) && preferX) {
                 x += speedX
                 y = snapY
-            } else if (isWall(nextX, nextY) && !isWall(thisX, nextY) && preferX) {
+            } else if (isBlocked(nextX, nextY) && !isBlocked(thisX, nextY) && preferX) {
                 x = snapX
                 y -= speedY
-            } else if (isWall(nextX, nextY) && !isWall(thisX, nextY) && !preferX) {
+            } else if (isBlocked(nextX, nextY) && !isBlocked(thisX, nextY) && !preferX) {
                 x = snapX
                 y -= speedY
-            } else if (isWall(nextX, nextY) && !isWall(nextX, thisY) && !preferX) {
+            } else if (isBlocked(nextX, nextY) && !isBlocked(nextX, thisY) && !preferX) {
                 x += speedX
                 y = snapY
-            } else if (!isWall(nextX, nextY) && isWall(thisX, nextY)) {
+            } else if (!isBlocked(nextX, nextY) && isBlocked(thisX, nextY)) {
                 x += speedX
                 y = snapY
-            } else if (!isWall(nextX, nextY) && isWall(nextX, thisY)) {
+            } else if (!isBlocked(nextX, nextY) && isBlocked(nextX, thisY)) {
                 x = snapX
                 y -= speedY
-            } else if (!isWall(nextX, nextY)) {
+            } else if (!isBlocked(nextX, nextY)) {
                 x += dx
                 y -= dy
             }
@@ -328,7 +329,40 @@ class GridzGame : GridzHandler {
 
         val endX = x.toInt()
         val endY = y.toInt()
-        return if ((endX != thisX) || (endY != thisY)) tile(endX, endY) else null
+        val nextTile = tile(nextX, nextY)
+        return if ((endX != thisX) || (endY != thisY)) nextTile to tile(endX, endY) else nextTile to null
+    }
+
+    private fun GridzTile?.updateCharging(dt: Long): List<GridzEvent> {
+        val events = mutableListOf<GridzEvent>()
+        if (this == null)
+            return events
+        else if (!isBlocked(x, y))
+            chargeTile.charge = -1L
+        else {
+            if ((x == chargeTile.x) && (y == chargeTile.y)) {
+                if (!chargeTile.charged) {
+                    chargeTile.charge += dt
+                    if (chargeTile.charge > 255L) {
+                        val dx = sign((x - this@GridzGame.x.toInt()).toDouble()).toInt()
+                        val dy = sign((y - this@GridzGame.y.toInt()).toDouble()).toInt()
+                        val toTile = this.isMovable(dx, dy)
+                        if (toTile != null) {
+                            events += TileCharged(this)
+                            action = MoveWall(this@GridzGame.x, this@GridzGame.y, this, toTile,
+                                WallMoved(this, toTile))
+                        }
+                        chargeTile.charged = true
+                    }
+                }
+            } else {
+                chargeTile.x = x
+                chargeTile.y = y
+                chargeTile.charge = 0L
+                chargeTile.charged = false
+            }
+        }
+        return events
     }
 
     private fun tile(x: Int, y: Int): GridzTile? =
@@ -337,9 +371,18 @@ class GridzGame : GridzHandler {
     private fun item(x: Int, y: Int): GridzItem? =
         items.firstOrNull { (it.x == x) && (it.y == y) }
 
-    private fun isWall(x: Int, y: Int): Boolean {
+    private fun isBlocked(x: Int, y: Int): Boolean {
         val tile = tile(x, y)
         return tile is Wall || ((tile is Exit) && !tile.open)
+    }
+
+    private fun GridzTile.isMovable(dx: Int, dy: Int): GridzTile? {
+        if (this !is Wall || ((dx != 0) && (dy != 0)))
+            return null
+        if (((x + dx) < 0) || ((x + dx) >= level.cols) || ((y + dy) < 0) || ((y + dy) >= level.rows))
+            return null
+        val tileBehind = tile(x + dx, y + dy) ?: return null
+        return if (tileBehind is Empty) tileBehind else null
     }
 
     private fun Map<String, Int>.areCompleted(): Boolean =

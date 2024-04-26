@@ -12,6 +12,8 @@ data object TileEntered : GridzEvent
 
 class TileLit(val tile: GridzTile) : GridzEvent
 
+class TileCharged(val tile: GridzTile) : GridzEvent
+
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
 
 class TeleportStarted(val from: GridzTile, val to: GridzTile) : GridzEvent
@@ -25,3 +27,5 @@ class ExitEntered(val exit: GridzTile) : GridzEvent
 data object ExitOpened : GridzEvent
 
 data object TeleportEnded : GridzEvent
+
+class WallMoved(val fromTile: GridzTile, val toTile: GridzTile) : GridzEvent

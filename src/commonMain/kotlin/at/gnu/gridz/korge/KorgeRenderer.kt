@@ -17,7 +17,7 @@ class KorgeRenderer {
             virtualSize = Size(WIDTH + INFO_WIDTH, HEIGHT),
             backgroundColor = Colors[BACKGROUND_COLOR]
         ) {
-            sceneContainer().changeTo { KorgeScene(gridzGame, this@Korge.views.storage, INFO_WIDTH) }
+            sceneContainer().changeTo { KorgeScene(gridzGame, this@Korge.views.storage) }
         }
     }
 
