@@ -31,7 +31,7 @@ open class GridzLevel {
         ********************
     """.trimIndent().split("\n")
 
-    open val title = "Test"
+    open val title = "T e s t"
     open val maxInventory = 10
     open val tailLitTime = 60000L
     open val tasks = mapOf(Key.NAME to 3, Pill.NAME to 40, Teleport.NAME to 1, Empty.NAME to 44)

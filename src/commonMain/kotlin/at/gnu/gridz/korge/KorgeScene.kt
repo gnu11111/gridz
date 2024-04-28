@@ -292,7 +292,7 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
                 is TileEntered -> { } //// walkSound.start()
                 is TileLit -> {
 ////                walkSound.start()
-                    tileComponents[it.tile]?.color = it.tile.backgroundColor()
+                    tileComponents[it.tile]?.color = it.tile.backgroundColor(lit = true)
                     taskComponents[Empty.NAME]?.text = Empty.NAME.toText(game.tasks[Empty.NAME] ?: 0)
                 }
                 is TileLitDeceased -> tileComponents[it.tile]?.color = it.tile.backgroundColor()
@@ -436,11 +436,11 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
             Colors["ff${level}${level}"]
         }
 
-    private fun GridzTile?.backgroundColor() =
+    private fun GridzTile?.backgroundColor(lit: Boolean = false) =
         if ((this == null) || (x + y).isEven)
-            Colors["#1d1d1d"]
+            if (lit) Colors["#143014"] else Colors["#1d1d1d"]
         else
-            Colors["#1a1a1a"]
+            if (lit) Colors["#102810"] else Colors["#1a1a1a"]
 
     private fun Long.toHex() =
         if (this <= 0L)
