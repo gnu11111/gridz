@@ -265,10 +265,10 @@ class GridzGame : GridzHandler {
 
         if ((nextX == thisX) && (nextY != thisY)) {
             if (!isBlocked(thisX, nextY) && ((offsetX < 0.5f) && (isBlocked(thisX - 1, nextY)))) {
-                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX + 0.04f
+                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX.coerceAtLeast(0.04f)
                 y = snapY
             } else if (!isBlocked(thisX, nextY) && ((offsetX > 0.5f) && (isBlocked(thisX + 1, nextY)))) {
-                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX - 0.04f
+                if (abs(0.5f - offsetX) < 0.1f) x = snapX else x += speedX.coerceAtMost(-0.04f)
                 y = snapY
             } else if (isBlocked(thisX, nextY)) {
                 preferX = false
@@ -280,10 +280,10 @@ class GridzGame : GridzHandler {
         } else if ((nextX != thisX) && (nextY == thisY)) {
             if (!isBlocked(nextX, thisY) && ((offsetY > 0.5f) && (isBlocked(nextX, thisY + 1)))) {
                 x = snapX
-                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY + 0.04f
+                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY.coerceAtLeast(0.04f)
             } else if (!isBlocked(nextX, thisY) && ((offsetY < 0.5f) && (isBlocked(nextX, thisY - 1)))) {
                 x = snapX
-                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY - 0.04f
+                if (abs(0.5f - offsetY) < 0.1f) y = snapY else y -= speedY.coerceAtMost(-0.04f)
             } else if (isBlocked(nextX, thisY)) {
                 preferX = true
                 y -= speedY
