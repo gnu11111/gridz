@@ -64,6 +64,8 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
     private var pointer = Circle()
     private var from: GridzTile? = null
     private var to: GridzTile? = null
+    class MovingWall(val tile: GridzTile, val wall: Image, val dx: Int, val dy: Int)
+    private var movingWall: MovingWall? = null
     private var previousButton = UIButton()
     private var pauseButton = UIButton()
     private var resetButton = UIButton()
@@ -277,10 +279,13 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
             val (dx, dy) = movementInput()
             if (!transition) {
                 game.tick(dx.toFloat(), dy.toFloat()).handleEvents()
-                timerText.text = game.timer.toDigitalTime()
-                player.position(game.x * tileWidth, game.y * tileHeight)
-                pointer.position(calculatePointerPostition())
+                val x = game.x * tileWidth
+                val y = game.y * tileHeight
+                player.position(x, y)
+                pointer.position(calculatePointerPostition(x, y))
                 pointer.color = calculatePointerColor()
+                movingWall.updatePosition()
+                timerText.text = game.timer.toDigitalTime()
                 updateFps()
             }
         }
@@ -296,13 +301,24 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
                     taskComponents[Empty.NAME]?.text = Empty.NAME.toText(game.tasks[Empty.NAME] ?: 0)
                 }
                 is TileLitDeceased -> tileComponents[it.tile]?.color = it.tile.backgroundColor()
-                is TileCharged -> wallComponents[it.tile]?.alpha = 0.5
-                is WallMoved -> {
+                is WallMoving -> {
                     val from = wallComponents[it.fromTile]
-                    from?.alpha = 1.0
+                    val to = tileComponents[it.toTile]
+                    if (from != null) {
+                        to?.alpha = 0.0
+                        val dx = it.toTile.x - it.fromTile.x
+                        val dy = it.toTile.y - it.fromTile.y
+                        movingWall = MovingWall(it.fromTile, from, dx, dy)
+                    }
+                }
+                is WallMoved -> {
+                    movingWall = null
+                    val from = wallComponents[it.fromTile]
+                    val to = tileComponents[it.toTile]
                     from?.position(it.fromTile.x * tileWidth, it.fromTile.y * tileHeight)
-                    tileComponents[it.toTile]?.position(it.toTile.x * tileWidth, it.toTile.y * tileHeight)
-                    tileComponents[it.toTile]?.color = it.toTile.backgroundColor()
+                    to?.position(it.toTile.x * tileWidth, it.toTile.y * tileHeight)
+                    to?.color = it.toTile.backgroundColor()
+                    to?.alpha = 1.0
                 }
                 is TeleportStarted -> {
                     teleportSound.start()
@@ -422,9 +438,9 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
         return dx.coerceIn(-1.0, 1.0) to dy.coerceIn(-1.0, 1.0)
     }
 
-    private fun calculatePointerPostition(): Point {
-        val pointerX = (game.x * tileWidth) + (0.25 * game.acceleration * tileWidth * sin(game.direction))
-        val pointerY = (game.y * tileHeight) - (0.25 * game.acceleration * tileHeight * cos(game.direction))
+    private fun calculatePointerPostition(x: Float, y: Float): Point {
+        val pointerX = x + (0.25 * game.acceleration * tileWidth * sin(game.direction))
+        val pointerY = y - (0.25 * game.acceleration * tileHeight * cos(game.direction))
         return Point(pointerX, pointerY)
     }
 
@@ -432,9 +448,16 @@ class KorgeScene(private val game: GridzGame, storage: NativeStorage)
         if (game.chargeTile.charge <= 0L)
             Colors.ANTIQUEWHITE
         else {
-            val level = (255 - game.chargeTile.charge).toHex()
-            Colors["ff${level}${level}"]
+            val level = (128 + 127 * ((game.chargeTile.charge / 16) % 2)).toHex()
+            Colors["${level}8080"]
         }
+
+    private fun MovingWall?.updatePosition() {
+        if (this == null) return
+        val x = if (dx != 0) game.x + dx - 0.5f else tile.x.toFloat()
+        val y = if (dy != 0) game.y + dy - 0.5f else tile.y.toFloat()
+        wall.position(x * tileWidth, y * tileHeight)
+    }
 
     private fun GridzTile?.backgroundColor(lit: Boolean = false) =
         if ((this == null) || (x + y).isEven)

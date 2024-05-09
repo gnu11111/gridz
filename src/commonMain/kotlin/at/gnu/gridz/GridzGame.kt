@@ -88,7 +88,7 @@ class GridzGame : GridzHandler {
                 state = State.RUNNING
                 start = DateTime.nowUnixMillisLong()
             } else
-                return listOf(ActionInProgress)
+                return emptyList()
         } else if (state != State.RUNNING)
             return emptyList()
         val lastTimer = timer
@@ -97,13 +97,13 @@ class GridzGame : GridzHandler {
         if (checkTimeout(inputX, inputY, dt))
             return listOf(GameReset)
         when (val event = handleAction(dt)) {
-            is WallMoved -> return listOf(event) + event.toTile.handleItems() + event.toTile.onEntered()
-            is TeleportEnded -> return listOf(event) + handleTasks(Teleport.NAME)
+            is WallMoved -> return event.toTile.handleItems() + event.toTile.onEntered() + event
+            is TeleportEnded -> return handleTasks(Teleport.NAME) + TeleportEnded
             is GameEnded -> {
                 state = State.ENDED
-                return listOf(event)
+                return listOf(GameEnded)
             }
-            is ActionInProgress -> return listOf(event)
+            is ActionInProgress -> return listOf(ActionInProgress)
             else -> { }
         }
         val (dx, dy) = updateSpeed(inputX, inputY, dt)
@@ -348,7 +348,7 @@ class GridzGame : GridzHandler {
                         val dy = sign((y - this@GridzGame.y.toInt()).toDouble()).toInt()
                         val toTile = this.isMovable(dx, dy)
                         if (toTile != null) {
-                            events += TileCharged(this)
+                            events += WallMoving(this, toTile)
                             action = MoveWall(this@GridzGame.x, this@GridzGame.y, this, toTile,
                                 WallMoved(this, toTile))
                         }

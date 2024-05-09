@@ -12,7 +12,7 @@ data object TileEntered : GridzEvent
 
 class TileLit(val tile: GridzTile) : GridzEvent
 
-class TileCharged(val tile: GridzTile) : GridzEvent
+class WallMoving(val fromTile: GridzTile, val toTile: GridzTile) : GridzEvent
 
 class TileLitDeceased(val tile: GridzTile) : GridzEvent
 

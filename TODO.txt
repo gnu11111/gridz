@@ -2,9 +2,8 @@
 Next steps:
 
 - move blocks
-  * move wall with player
-  * keep charge to immediately move again
   * z-order: tiles, items, walls, player
+  * keep charge to immediately move again
   * keep walls transparent when covering an item
   * make movable and destroyable part of the level configuration
 - destroy blocks
@@ -26,6 +25,8 @@ Ideas:
 
 Done:
 
+- move blocks
+  * move wall with player
 - create sounds
 - preserve high scores
 - convert rendered graphics into images
